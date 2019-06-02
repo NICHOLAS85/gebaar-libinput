@@ -1,3 +1,5 @@
+***This fork merges [Coffee2CodeNL/gebaar-libinput#10](https://github.com/Coffee2CodeNL/gebaar-libinput/pull/10) adding pinch in/out gestures***
+
 Gebaar
 =========
 
@@ -55,6 +57,10 @@ right_down = ""
 down = ""
 left = ""
 right = ""
+
+[commands.pinch]
+in = ""
+out = ""
 ```
 
 ### Repository versions
@@ -86,6 +92,10 @@ right_down = ""
 down = ""
 left = "bspc desktop -f prev"
 right = "bspc desktop -f next"
+
+[commands.pinch]
+in = ""
+out = ""
 ```
 
 Add `gebaard -b` to `~/.config/bspwm/bspwmrc`
@@ -93,9 +103,8 @@ Add `gebaard -b` to `~/.config/bspwm/bspwmrc`
 ### State of the project
 
 - [x] Receiving swipe events from libinput
-- [ ] Receiving pinch/zoom events from libinput
+- [x] Receiving pinch/zoom events from libinput
 - [ ] Receiving rotation events from libinput
 - [x] Converting libinput events to motions
 - [x] Running commands based on motions
 - [x] Refactor code to be up to Release standards, instead of testing-hell
-
