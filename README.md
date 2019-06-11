@@ -1,4 +1,4 @@
-***This fork merges [Coffee2CodeNL/gebaar-libinput#10](https://github.com/Coffee2CodeNL/gebaar-libinput/pull/10) adding pinch in/out gestures***
+***This fork merges [Coffee2CodeNL/gebaar-libinput#10](https://github.com/Coffee2CodeNL/gebaar-libinput/pull/10) adding pinch in/out gestures and [Coffee2CodeNL/gebaar-libinput#25](https://github.com/Coffee2CodeNL/gebaar-libinput/pull/25) adding error catching to config parse***
 
 Gebaar
 =========
@@ -22,20 +22,19 @@ Click to join: [![Discord](https://img.shields.io/discord/548978799136473106.svg
 
 ### How to build and install
 
-1. Clone the repository via `git clone https://github.com/Coffee2CodeNL/gebaar-libinput`
-2. Check out the latest version (`git checkout v0.0.5`)
-3. Run `git submodule update --init` in the root folder
-4. Run `mkdir build && cd build`
-5. Run `cmake ..`
-6. Run `make -j$(nproc)`
-7. Run `sudo make install` to install
-8. Run `mkdir -p ~/.config/gebaar`
-9. Run `nano ~/.config/gebaar/gebaard.toml` (or vim, if you like it better)
-10. Add the snippet below to `gebaard.toml`
-11. Configure commands to run per direction
-12. Add yourself to the `input` group with `usermod -a -G input $USER`
-13. Run Gebaar via some startup file by adding `gebaard -b` to it
-14. Reboot and see the magic
+1. Clone the repository via `git clone https://github.com/NICHOLAS85/gebaar-libinput`
+2. Run `git submodule update --init` in the root folder
+3. Run `mkdir build && cd build`
+4. Run `cmake ..`
+5. Run `make -j$(nproc)`
+6. Run `sudo make install` to install
+7. Run `mkdir -p ~/.config/gebaar`
+8. Run `nano ~/.config/gebaar/gebaard.toml` (or vim, if you like it better)
+9. Add the snippet below to `gebaard.toml`
+10. Configure commands to run per direction
+11. Add yourself to the `input` group with `usermod -a -G input $USER`
+12. Run Gebaar via some startup file by adding `gebaard -b` to it
+13. Reboot and see the magic
 
 ```toml
 [commands.swipe.three]
