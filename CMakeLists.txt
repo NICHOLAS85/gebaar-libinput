@@ -1,8 +1,8 @@
-cmake_minimum_required(VERSION 3.12.1)
+cmake_minimum_required(VERSION 3.10.2)
 project(gebaar)
 set(CMAKE_EXPORT_COMPILE_COMMANDS on)
 set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -Wall -Wextra -pedantic")
+set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -Wall -Wextra -pedantic -pthread")
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 
 add_executable(gebaard
@@ -24,7 +24,7 @@ endif ()
 find_package(udev)
 
 target_link_libraries(gebaard ${LIBINPUT_LIBRARIES} ${UDEV_LIBRARIES} stdc++fs)
-target_include_directories(gebaard PUBLIC ${LIBINPUT_INCLUDE_DIRS} ${UDEV_INCLUDE_DIRS} libs/cxxopts/include libs/cpptoml/include)
+target_include_directories(gebaard PUBLIC ${LIBINPUT_INCLUDE_DIRS} ${UDEV_INCLUDE_DIRS} libs/cxxopts/include libs/cpptoml/include libs/spdlog/include/)
 target_compile_options(gebaard PUBLIC ${LIBINPUT_CFLAGS_OTHER} ${UDEV_CFLAGS_OTHER})
 
 install(TARGETS gebaard DESTINATION bin)
