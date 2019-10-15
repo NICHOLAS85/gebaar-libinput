@@ -16,8 +16,13 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <poll.h>
 #include "input.h"
+#include <cstdarg>
+#include <cstdio>
+#include <iostream>
+#include <poll.h>
+#define FN "input"
+#define THRESH 100
 
 /**
  * Input system constructor, we pass our Configuration object via a shared pointer
@@ -28,6 +33,7 @@ gebaar::io::Input::Input(std::shared_ptr<gebaar::config::Config> const& config_p
 {
     config = config_ptr;
     gesture_swipe_event = {};
+    touch_swipe_event = {};
 }
 
 /**
@@ -39,7 +45,154 @@ bool gebaar::io::Input::initialize_context()
 {
     udev = udev_new();
     libinput = libinput_udev_create_context(&libinput_interface, nullptr, udev);
-    return libinput_udev_assign_seat(libinput, "seat0")==0;
+    return libinput_udev_assign_seat(libinput, "seat0") == 0;
+}
+
+int gebaar::io::Input::get_swipe_type(double sdx, double sdy)
+{
+    double x = sdx;
+    double y = sdy;
+    int swipe_type = 5; // middle = no swipe
+        // 1 = left_up, 2 = up, 3 = right_up...
+        // 1 2 3
+        // 4 5 6
+        // 7 8 9
+    const double OBLIQUE_RATIO = 0.414; // =~ tan(22.5);
+
+    if (abs(x) > abs(y)) {
+        // left or right swipe
+        swipe_type += x < 0 ? -1 : 1;
+
+        // check for oblique swipe
+        if (abs(y) / abs(x) > OBLIQUE_RATIO) {
+            swipe_type += y < 0 ? -3 : 3;
+        }
+    } else {
+        // up of down swipe
+        swipe_type += y < 0 ? -3 : 3;
+
+        // check for oblique swipe
+        if (abs(x) / abs(y) > OBLIQUE_RATIO) {
+            swipe_type += x < 0 ? -1 : 1;
+        }
+    }
+    return swipe_type;
+}
+
+void gebaar::io::Input::apply_swipe(int swipe_type, int fingers)
+{
+    std::string command = config->get_command(fingers, swipe_type);
+    spdlog::get("main")->debug("[{}] at {} - {}, fgrs: {}, swpe-typ: {}", FN, __LINE__, __func__, fingers, swipe_type);
+    if (command.length() > 0) {
+        std::system(command.c_str());
+    }
+}
+
+/**
+ * This function is used to decide how many fingers are used for the touch swipe gesture
+ * Each swipe must ensure
+ * 1) The touch down of all fingers occur in x amount of time from the previous finger
+ * 2) The lift up of all fingers occur in x amount of time from the previous finger
+ *
+ * Any fingers touched down or lifted outside of x makes the event 'unclean' and therefore, swiping fails
+ *
+ * @param slots Represents pair(finger, timeoftouch(down/lift))
+ */
+void gebaar::io::Input::check_multitouch_down_up(std::vector<std::pair<int, double>> slots, std::string downup)
+{
+    if (touch_swipe_event.isClean && slots.size() > 1) {
+        std::vector<std::pair<int, double>>::reverse_iterator iter = slots.rbegin();
+        std::vector<std::pair<int, double>>::reverse_iterator prev_iter = std::next(iter, 1);
+        double timebetweenslots = iter->second - prev_iter->second;
+        if (timebetweenslots <= THRESH) {
+            touch_swipe_event.fingers = slots.size();
+        } else {
+            touch_swipe_event.isClean = false;
+            spdlog::get("main")->debug("[{}] at {} - {} - {}: finger added/lifted too late/early. {} ", FN, __LINE__, __func__, downup);
+        }
+    }
+}
+
+/**
+ * This event occurs when a finger touches the touchscreen
+ * It passes a list of pairs (slot_id, timestamp) to check_multitouch_down_up
+ * Each slot corresponds to a finger touched down on the screen
+ *
+ * @param tev Touch Event
+ */
+void gebaar::io::Input::handle_touch_event_down(libinput_event_touch* tev)
+{
+    touch_swipe_event.down_slots.push_back(std::pair<int, double>(libinput_event_touch_get_slot(tev), libinput_event_touch_get_time(tev)));
+    check_multitouch_down_up(touch_swipe_event.down_slots, "down_slots");
+}
+
+/**
+ * This event occurs when a finger lifts up from the touchscreen
+ * It passes a list of pairs (slot_id, timestamp) to check_multitouch_down_up
+ * Each slot corresponds to a finger lifted from the screen
+ *
+ * If all the fingers are lifted, we check the swipe type of all fingers,
+ * If all fingers swipe in the same direction, success
+ *
+ * @param tev Touch Event
+ */
+void gebaar::io::Input::handle_touch_event_up(libinput_event_touch* tev)
+{
+    touch_swipe_event.up_slots.push_back(std::pair<int, double>(libinput_event_touch_get_slot(tev), libinput_event_touch_get_time(tev)));
+    check_multitouch_down_up(touch_swipe_event.up_slots, "up_slots");
+
+    if (touch_swipe_event.up_slots.size() == touch_swipe_event.down_slots.size()) {
+        std::map<int, std::pair<double, double>>::iterator iter = touch_swipe_event.delta_xy.begin();
+        std::vector<int> swipes;
+        int swipe_type;
+        while (iter != touch_swipe_event.delta_xy.end()) {
+            double x = iter->second.first;
+            double y = iter->second.second;
+            swipe_type = get_swipe_type(x, y);
+
+            if (!swipes.empty() && swipe_type != swipes.back()) {
+                touch_swipe_event.isClean = false;
+            }
+            spdlog::get("main")->debug("[{}] at {} - {}, swpe-type: {}", FN, __LINE__, __func__, swipe_type);
+            swipes.push_back(swipe_type);
+            iter++;
+        }
+
+        if (touch_swipe_event.down_slots.size() != touch_swipe_event.delta_xy.size()) {
+            touch_swipe_event.isClean = false;
+        }
+
+        if (touch_swipe_event.isClean) {
+            apply_swipe(swipe_type, touch_swipe_event.fingers);
+        }
+
+        spdlog::get("main")->debug("[{}] at {} - {}, fgrs: {}, d-slts: {}, u-slts: {}, d-xy: {}, prv-xy: {}", FN, __LINE__, __func__, touch_swipe_event.fingers, touch_swipe_event.down_slots.size(), touch_swipe_event.up_slots.size(), touch_swipe_event.delta_xy.size(), touch_swipe_event.prev_xy.size());
+        touch_swipe_event = {};
+        spdlog::get("main")->debug("[{}] at {} - {}, fgrs: {}, d-slts: {}, u-slts: {}, d-xy: {}, prv-xy: {}", FN, __LINE__, __func__, touch_swipe_event.fingers, touch_swipe_event.down_slots.size(), touch_swipe_event.up_slots.size(), touch_swipe_event.delta_xy.size(), touch_swipe_event.prev_xy.size());
+        spdlog::get("main")->debug("[{}] at {} - {}: touch gesture finished, {}\n\n", FN, __LINE__, __func__, touch_swipe_event.isClean);
+    }
+}
+
+/**
+ * This event occurs when a finger moves on the touchscreen
+ * mimics handle_swipe_event_with_coords but for multiple tracks (each touched down finger)
+ *
+ * libinput touch event has no get_dx, get_dy functions. Store previous coordinates to acquire dx and dy
+ *
+ * @param tev Touch Event
+ */
+void gebaar::io::Input::handle_touch_event_motion(libinput_event_touch* tev)
+{
+    if (touch_swipe_event.delta_xy.find(libinput_event_touch_get_slot(tev)) == touch_swipe_event.delta_xy.end()) {
+        touch_swipe_event.delta_xy.insert(std::pair<int, std::pair<double, double>>(libinput_event_touch_get_slot(tev), { 0, 0 }));
+        touch_swipe_event.prev_xy.insert(std::pair<int, std::pair<double, double>>(libinput_event_touch_get_slot(tev), { libinput_event_touch_get_x(tev), libinput_event_touch_get_y(tev) }));
+    } else {
+        std::pair<double, double> prevcoord = touch_swipe_event.prev_xy.find(libinput_event_touch_get_slot(tev))->second;
+        double prevx = prevcoord.first;
+        double prevy = prevcoord.second;
+        touch_swipe_event.delta_xy.find(libinput_event_touch_get_slot(tev))->second = { libinput_event_touch_get_x(tev) - prevx, libinput_event_touch_get_y(tev) - prevy };
+        touch_swipe_event.prev_xy.find(libinput_event_touch_get_slot(tev))->second = { libinput_event_touch_get_x(tev), libinput_event_touch_get_y(tev) };
+    }
 }
 
 /**
@@ -54,40 +207,11 @@ void gebaar::io::Input::handle_swipe_event_without_coords(libinput_event_gesture
 {
     if (begin) {
         gesture_swipe_event.fingers = libinput_event_gesture_get_finger_count(gev);
-    }
-    else {
+    } else {
         double x = gesture_swipe_event.x;
         double y = gesture_swipe_event.y;
-        int swipe_type = 5; // middle = no swipe
-                           // 1 = left_up, 2 = up, 3 = right_up...
-                           // 1 2 3
-                           // 4 5 6
-                           // 7 8 9
-        const double OBLIQUE_RATIO = 0.414; // =~ tan(22.5);
-
-        if (abs(x) > abs(y)) {
-            // left or right swipe
-            swipe_type += x < 0 ? -1 : 1;
-
-            // check for oblique swipe
-            if (abs(y) / abs(x) > OBLIQUE_RATIO) {
-                swipe_type += y < 0 ? -3 : 3;
-            }
-        } else {
-            // up of down swipe
-            swipe_type += y < 0 ? -3 : 3;
-
-            // check for oblique swipe
-            if (abs(x) / abs(y) > OBLIQUE_RATIO) {
-                swipe_type += x < 0 ? -1 : 1;
-            }
-        }
-
-        if (gesture_swipe_event.fingers == 3) {
-            std::system(config->swipe_three_commands[swipe_type].c_str());
-        } else if (gesture_swipe_event.fingers == 4) {
-            std::system(config->swipe_four_commands[swipe_type].c_str());
-        }
+        int swipe_type = get_swipe_type(x, y);
+        apply_swipe(swipe_type, gesture_swipe_event.fingers);
 
         gesture_swipe_event = {};
     }
@@ -118,12 +242,13 @@ bool gebaar::io::Input::initialize()
  */
 void gebaar::io::Input::start_loop()
 {
-    struct pollfd fds{};
+    struct pollfd fds {
+    };
     fds.fd = libinput_get_fd(libinput);
     fds.events = POLLIN;
     fds.revents = 0;
 
-    while (poll(&fds, 1, -1)>-1) {
+    while (poll(&fds, 1, -1) > -1) {
         handle_event();
     }
 }
@@ -139,17 +264,33 @@ gebaar::io::Input::~Input()
  */
 bool gebaar::io::Input::gesture_device_exists()
 {
-    bool device_found = false;
-    while ((libinput_event = libinput_get_event(libinput))!=nullptr) {
+    swipe_event_group = "";
+    while ((libinput_event = libinput_get_event(libinput)) != nullptr) {
         auto device = libinput_event_get_device(libinput_event);
         if (libinput_device_has_capability(device, LIBINPUT_DEVICE_CAP_GESTURE)) {
-            device_found = true;
+            swipe_event_group = "GESTURE";
+        } else if (libinput_device_has_capability(device, LIBINPUT_DEVICE_CAP_TOUCH)) {
+            swipe_event_group = "TOUCH";
         }
 
         libinput_event_destroy(libinput_event);
         libinput_dispatch(libinput);
     }
-    return device_found;
+    if (swipe_event_group.empty()) {
+        spdlog::get("main")->error("[{}] at {} - {}: Gesture/Touch device not found", FN, __LINE__, __func__);
+    } else {
+        spdlog::get("main")->debug("[{}] at {} - {}: Gesture/Touch device found", FN, __LINE__, __func__);
+        spdlog::get("main")->debug("[{}] at {} - {}: Gebaar using '{}' events", FN, __LINE__, __func__, swipe_event_group);
+    }
+    return !swipe_event_group.empty();
+}
+
+bool gebaar::io::Input::check_chosen_event(std::string ev)
+{
+    if (swipe_event_group == ev) {
+        return true;
+    }
+    return false;
 }
 
 /**
@@ -161,13 +302,19 @@ void gebaar::io::Input::handle_event()
     while ((libinput_event = libinput_get_event(libinput))) {
         switch (libinput_event_get_type(libinput_event)) {
         case LIBINPUT_EVENT_GESTURE_SWIPE_BEGIN:
-            handle_swipe_event_without_coords(libinput_event_get_gesture_event(libinput_event), true);
+            if (check_chosen_event("GESTURE")) {
+                handle_swipe_event_without_coords(libinput_event_get_gesture_event(libinput_event), true);
+            }
             break;
         case LIBINPUT_EVENT_GESTURE_SWIPE_UPDATE:
-            handle_swipe_event_with_coords(libinput_event_get_gesture_event(libinput_event));
+            if (check_chosen_event("GESTURE")) {
+                handle_swipe_event_with_coords(libinput_event_get_gesture_event(libinput_event));
+            }
             break;
         case LIBINPUT_EVENT_GESTURE_SWIPE_END:
-            handle_swipe_event_without_coords(libinput_event_get_gesture_event(libinput_event), false);
+            if (check_chosen_event("GESTURE")) {
+                handle_swipe_event_without_coords(libinput_event_get_gesture_event(libinput_event), false);
+            }
             break;
         case LIBINPUT_EVENT_NONE:
             break;
@@ -186,10 +333,19 @@ void gebaar::io::Input::handle_event()
         case LIBINPUT_EVENT_POINTER_AXIS:
             break;
         case LIBINPUT_EVENT_TOUCH_DOWN:
+            if (check_chosen_event("TOUCH")) {
+                handle_touch_event_down(libinput_event_get_touch_event(libinput_event));
+            }
             break;
         case LIBINPUT_EVENT_TOUCH_UP:
+            if (check_chosen_event("TOUCH")) {
+                handle_touch_event_up(libinput_event_get_touch_event(libinput_event));
+            }
             break;
         case LIBINPUT_EVENT_TOUCH_MOTION:
+            if (check_chosen_event("TOUCH")) {
+                handle_touch_event_motion(libinput_event_get_touch_event(libinput_event));
+            }
             break;
         case LIBINPUT_EVENT_TOUCH_CANCEL:
             break;
@@ -223,5 +379,3 @@ void gebaar::io::Input::handle_event()
         libinput_dispatch(libinput);
     }
 }
-
-

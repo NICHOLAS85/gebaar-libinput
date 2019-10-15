@@ -23,6 +23,13 @@
 #include <filesystem>
 #include <pwd.h>
 #include <iostream>
+#include <spdlog/spdlog.h>
+
+#define MAX_DIRECTION 9
+#define MIN_DIRECTION 1
+const std::map<int, std::string> SWIPE_COMMANDS = {
+    {1, "left_up"}, {2, "up"},        {3, "right_up"}, {4, "left"},
+    {6, "right"},   {7, "left_down"}, {8, "down"},     {9, "right_down"}};
 
 namespace gebaar::config {
     class Config {
@@ -33,10 +40,10 @@ namespace gebaar::config {
 
         void load_config();
 
-        std::string swipe_three_commands[10];
-        std::string swipe_four_commands[10];
+        std::string get_command(int fingers, int swipe_type);
 
     private:
+        std::map<int, std::map<std::string, std::string>> commands;
         bool config_file_exists();
 
         bool find_config_file();

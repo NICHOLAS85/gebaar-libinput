@@ -19,62 +19,92 @@
 #ifndef GEBAAR_INPUT_HPP
 #define GEBAAR_INPUT_HPP
 
-#include <libinput.h>
-#include <fcntl.h>
-#include <zconf.h>
 #include "../config/config.h"
+#include <fcntl.h>
+#include <iterator>
+#include <libinput.h>
+#include <list>
+#include <map>
+#include <vector>
+#include <zconf.h>
 
 namespace gebaar::io {
-    struct gesture_swipe_event {
-        int fingers;
-        double x;
-        double y;
+struct gesture_swipe_event {
+    int fingers;
+    double x;
+    double y;
+};
+
+struct touch_swipe_event {
+    int fingers;
+    double x;
+    double y;
+    std::map<int, std::pair<double, double>> prev_xy;
+    std::map<int, std::pair<double, double>> delta_xy;
+    std::vector<std::pair<int, double>> down_slots;
+    std::vector<std::pair<int, double>> up_slots;
+    bool isClean = true;
+};
+
+class Input {
+public:
+    Input(std::shared_ptr<gebaar::config::Config> const& config_ptr); //, std::shared_ptr<gebaar::debug::Debug> const& debug_ptr);
+
+    ~Input();
+
+    bool initialize();
+
+    void start_loop();
+
+private:
+    std::shared_ptr<gebaar::config::Config> config;
+    std::string swipe_event_group;
+    struct libinput* libinput;
+    struct libinput_event* libinput_event;
+    struct udev* udev;
+    struct gesture_swipe_event gesture_swipe_event;
+    struct touch_swipe_event touch_swipe_event;
+
+    bool initialize_context();
+
+    bool gesture_device_exists();
+
+    bool check_chosen_event(std::string ev);
+
+    static int open_restricted(const char* path, int flags, void* user_data)
+    {
+        int fd = open(path, flags);
+        return fd < 0 ? -errno : fd;
+    }
+
+    static void close_restricted(int fd, void* user_data)
+    {
+        close(fd);
+    }
+
+    constexpr static struct libinput_interface libinput_interface = {
+        .open_restricted = open_restricted,
+        .close_restricted = close_restricted,
     };
 
-    class Input {
-    public:
-        Input(std::shared_ptr<gebaar::config::Config> const& config_ptr);
+    void check_multitouch_down_up(std::vector<std::pair<int, double>> slots, std::string downup);
 
-        ~Input();
+    void apply_swipe(int swipe_type, int fingers);
 
-        bool initialize();
+    int get_swipe_type(double sdx, double sdy);
 
-        void start_loop();
+    void handle_event();
 
-    private:
-        std::shared_ptr<gebaar::config::Config> config;
+    void handle_touch_event_down(libinput_event_touch* tev);
 
-        struct libinput* libinput;
-        struct libinput_event* libinput_event;
-        struct udev* udev;
-        struct gesture_swipe_event gesture_swipe_event;
+    void handle_touch_event_up(libinput_event_touch* tev);
 
-        bool initialize_context();
+    void handle_touch_event_motion(libinput_event_touch* tev);
 
-        bool gesture_device_exists();
+    void handle_swipe_event_without_coords(libinput_event_gesture* gev, bool begin);
 
-        static int open_restricted(const char* path, int flags, void* user_data)
-        {
-            int fd = open(path, flags);
-            return fd<0 ? -errno : fd;
-        }
-
-        static void close_restricted(int fd, void* user_data)
-        {
-            close(fd);
-        }
-
-        constexpr static struct libinput_interface libinput_interface = {
-                .open_restricted = open_restricted,
-                .close_restricted = close_restricted,
-        };
-
-        void handle_event();
-
-        void handle_swipe_event_without_coords(libinput_event_gesture* gev, bool begin);
-
-        void handle_swipe_event_with_coords(libinput_event_gesture* gev);
-    };
+    void handle_swipe_event_with_coords(libinput_event_gesture* gev);
+};
 }
 
 #endif //GEBAAR_INPUT_HPP

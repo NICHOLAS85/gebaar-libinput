@@ -36,7 +36,8 @@ Click to join: [![Discord](https://img.shields.io/discord/548978799136473106.svg
 14. Reboot and see the magic
 
 ```toml
-[commands.swipe.three]
+[[command-swipe]]
+fingers = 3
 left_up = ""
 right_up = ""
 up = ""
@@ -46,7 +47,8 @@ down = ""
 left = ""
 right = ""
 
-[commands.swipe.four]
+[[command-swipe]]
+fingers = 4
 left_up = ""
 right_up = ""
 up = ""
@@ -67,22 +69,16 @@ right = ""
 
 _~/.config/gebaar/gebaard.toml_
 ```toml
-[commands.swipe.three]
-left_up = ""
-right_up = ""
+[[command-swipe]]
+fingers = 3
 up = "bspc node -f north"
-left_down = ""
-right_down = ""
 down = "bspc node -f south"
 left = "bspc node -f west"
 right = "bspc node -f east"
 
-[commands.swipe.four]
-left_up = ""
-right_up = ""
+[[command-swipe]]
+fingers = 4
 up = "rofi -show combi"
-left_down = ""
-right_down = ""
 down = ""
 left = "bspc desktop -f prev"
 right = "bspc desktop -f next"
