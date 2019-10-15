@@ -283,7 +283,11 @@ gebaar::io::Input::~Input()
 bool gebaar::io::Input::gesture_device_exists()
 {
     swipe_event_group = "";
-    if (strcmp(config->gesture_type.c_str(), "AUTO") == 0) {
+    if (strcmp(config->interact_type.c_str(), "TOUCH") == 0 || strcmp(config->interact_type.c_str(), "GESTURE") == 0){
+        spdlog::get("main")->debug("[{}] at {} - {}: Interact type set manually", FN, __LINE__, __func__);
+        swipe_event_group = config->interact_type;
+    } else {
+        spdlog::get("main")->debug("[{}] at {} - {}: Assuming AUTO interact type", FN, __LINE__, __func__);
         while ((libinput_event = libinput_get_event(libinput)) != nullptr) {
             auto device = libinput_event_get_device(libinput_event);
             if (libinput_device_has_capability(device, LIBINPUT_DEVICE_CAP_GESTURE)) {
@@ -295,10 +299,6 @@ bool gebaar::io::Input::gesture_device_exists()
             libinput_event_destroy(libinput_event);
             libinput_dispatch(libinput);
         }
-    } else if (strcmp(config->gesture_type.c_str(), "TOUCH") == 0){
-        swipe_event_group = "TOUCH";
-    } else if (strcmp(config->gesture_type.c_str(), "GESTURE") == 0){
-        swipe_event_group = "GESTURE";
     }
 
     if (swipe_event_group.empty()) {
