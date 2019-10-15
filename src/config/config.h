@@ -41,6 +41,8 @@ namespace gebaar::config {
         void load_config();
 
         std::string get_command(int fingers, int swipe_type);
+        std::string pinch_in_command;
+        std::string pinch_out_command;
 
     private:
         std::map<int, std::map<std::string, std::string>> commands;

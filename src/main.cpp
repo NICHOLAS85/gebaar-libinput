@@ -31,28 +31,34 @@ gebaar::io::Input* input;
 int main(int argc, char* argv[])
 {
     auto logger = spdlog::stdout_logger_mt("main");
+    try
+    {
+      cxxopts::Options options(argv[0], "Gebaard Gestures Daemon");
 
-    cxxopts::Options options(argv[0], "Gebaard Gestures Daemon");
+      bool should_daemonize = false;
 
-    bool should_daemonize = false;
+      options.add_options()("b,background", "Daemonize", cxxopts::value(should_daemonize))("h,help", "Prints this help text")("v,verbose", "Prints verbose output during runtime");
 
-    options.add_options()("b,background", "Daemonize", cxxopts::value(should_daemonize))("h,help", "Prints this help text")("v,verbose", "Prints verbose output during runtime");
+      auto result = options.parse(argc, argv);
 
-    auto result = options.parse(argc, argv);
+      if (result.count("help")) {
+          std::cout << options.help() << std::endl;
+          exit(EXIT_SUCCESS);
+      }
 
-    if (result.count("help")) {
-        std::cout << options.help() << std::endl;
-        exit(EXIT_SUCCESS);
-    }
+      if (result.count("verbose")) {
+          std::cout << "verbose mode" << std::endl;
+          spdlog::set_level(spdlog::level::debug);
+      }
 
-    if (result.count("verbose")) {
-        std::cout << "verbose mode" << std::endl;
-        spdlog::set_level(spdlog::level::debug);
-    }
-
-    if (should_daemonize) {
-        auto* daemonizer = new gebaar::daemonizer::Daemonizer();
-        daemonizer->daemonize();
+      if (should_daemonize) {
+          auto* daemonizer = new gebaar::daemonizer::Daemonizer();
+          daemonizer->daemonize();
+      }
+    } catch (const cxxopts::OptionException& e)
+    {
+        std::cerr << "error parsing options: " << e.what() << std::endl;
+        exit(EXIT_FAILURE);
     }
 
     std::shared_ptr<gebaar::config::Config> config = std::make_shared<gebaar::config::Config>();

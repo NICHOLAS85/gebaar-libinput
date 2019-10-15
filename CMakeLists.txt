@@ -24,7 +24,7 @@ endif ()
 find_package(udev)
 
 target_link_libraries(gebaard ${LIBINPUT_LIBRARIES} ${UDEV_LIBRARIES} stdc++fs)
-target_include_directories(gebaard PUBLIC ${LIBINPUT_INCLUDE_DIRS} ${UDEV_INCLUDE_DIRS} libs/cxxopts/include libs/cpptoml/include)
+target_include_directories(gebaard PUBLIC ${LIBINPUT_INCLUDE_DIRS} ${UDEV_INCLUDE_DIRS} libs/cxxopts/include libs/cpptoml/include libs/spdlog/include/)
 target_compile_options(gebaard PUBLIC ${LIBINPUT_CFLAGS_OTHER} ${UDEV_CFLAGS_OTHER})
 
 install(TARGETS gebaard DESTINATION bin)
