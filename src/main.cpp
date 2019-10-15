@@ -37,7 +37,10 @@ int main(int argc, char* argv[])
 
       bool should_daemonize = false;
 
-      options.add_options()("b,background", "Daemonize", cxxopts::value(should_daemonize))("h,help", "Prints this help text")("v,verbose", "Prints verbose output during runtime");
+      options.add_options()
+      ("b,background", "Daemonize", cxxopts::value(should_daemonize))
+      ("h,help", "Prints this help text")
+      ("v,verbose", "Prints verbose output during runtime");
 
       auto result = options.parse(argc, argv);
 
