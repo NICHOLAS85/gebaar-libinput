@@ -286,7 +286,7 @@ bool gebaar::io::Input::gesture_device_exists()
     while ((libinput_event = libinput_get_event(libinput)) != nullptr) {
         auto device = libinput_event_get_device(libinput_event);
         if (libinput_device_has_capability(device, LIBINPUT_DEVICE_CAP_GESTURE)) {
-            swipe_event_group = "GESTURE";
+            swipe_event_group = "TOUCH";
         } else if (libinput_device_has_capability(device, LIBINPUT_DEVICE_CAP_TOUCH)) {
             swipe_event_group = "TOUCH";
         }
