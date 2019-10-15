@@ -109,5 +109,4 @@ private:
 };
 }
 
-
 #endif //GEBAAR_INPUT_HPP

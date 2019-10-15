@@ -22,6 +22,7 @@
 #include "../util.h"
 #include <iterator>
 #define FN "config"
+
 /**
  * Check if config file exists at current path
  */
