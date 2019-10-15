@@ -1,4 +1,4 @@
-***This fork merges [Coffee2CodeNL/gebaar-libinput#10](https://github.com/Coffee2CodeNL/gebaar-libinput/pull/10) adding pinch in/out gestures and [Coffee2CodeNL/gebaar-libinput#25](https://github.com/Coffee2CodeNL/gebaar-libinput/pull/25) adding error catching to config parse***
+***This fork merges https://github.com/Coffee2CodeNL/gebaar-libinput/pull/10 adding pinch in/out gestures, https://github.com/Coffee2CodeNL/gebaar-libinput/pull/25 adding error catching to config parse, and https://github.com/gabrielstedman/gebaar-libinput adding touch support***
 
 Gebaar
 =========
@@ -37,7 +37,8 @@ Click to join: [![Discord](https://img.shields.io/discord/548978799136473106.svg
 13. Reboot and see the magic
 
 ```toml
-[commands.swipe.three]
+[[command-swipe]]
+fingers = 3
 left_up = ""
 right_up = ""
 up = ""
@@ -47,7 +48,8 @@ down = ""
 left = ""
 right = ""
 
-[commands.swipe.four]
+[[command-swipe]]
+fingers = 4
 left_up = ""
 right_up = ""
 up = ""
@@ -72,29 +74,19 @@ out = ""
 
 _~/.config/gebaar/gebaard.toml_
 ```toml
-[commands.swipe.three]
-left_up = ""
-right_up = ""
+[[command-swipe]]
+fingers = 3
 up = "bspc node -f north"
-left_down = ""
-right_down = ""
 down = "bspc node -f south"
 left = "bspc node -f west"
 right = "bspc node -f east"
 
-[commands.swipe.four]
-left_up = ""
-right_up = ""
+[[command-swipe]]
+fingers = 4
 up = "rofi -show combi"
-left_down = ""
-right_down = ""
 down = ""
 left = "bspc desktop -f prev"
 right = "bspc desktop -f next"
-
-[commands.pinch]
-in = ""
-out = ""
 ```
 
 Add `gebaard -b` to `~/.config/bspwm/bspwmrc`
