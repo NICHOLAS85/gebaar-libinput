@@ -61,6 +61,8 @@ void gebaar::config::Config::load_config()
             pinch_in_command = *config->get_qualified_as<std::string>("commands.pinch.in");
             pinch_out_command = *config->get_qualified_as<std::string>("commands.pinch.out");
 
+            gesture_type = *config->get_qualified_as<std::string>("gesture.type.type");
+
             loaded = true;
             spdlog::get("main")->debug("[{}] at {} - Config loaded", FN, __LINE__);
         }
