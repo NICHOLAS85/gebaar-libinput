@@ -102,7 +102,7 @@ tablet = ""
 Additional config options can be added which are listed below:
 
 ```toml
-[interact.type]
+[interact-type]
 type = ""
 ```
 
