@@ -237,11 +237,11 @@ void gebaar::io::Input::handle_pinch_event(libinput_event_gesture* gev)
 {
     double scale = libinput_event_gesture_get_scale(gev);
     if (scale < 1) {
-        // pinch out
-        std::system(config->pinch_out_command.c_str());
-    } else {
         // pinch in
         std::system(config->pinch_in_command.c_str());
+    } else {
+        // pinch out
+        std::system(config->pinch_out_command.c_str());
     }
 }
 
