@@ -115,7 +115,7 @@ fingers =
 [[command-swipe-touch]]
 fingers =
 ```
-`command-swipe-gesture` commands are run on detected touchpad gestures. `command-swipe-touch` commands are run on detected touchscreen gestures.
+`command-swipe-gesture` commands are run on detected touchpad gestures. `command-swipe-touch` commands are run on detected touchscreen gestures. Gebaar only runs in one mode at a time but automatically detects switches, changing modes accordingly.
 `fingers` option can be 2 or greater
 
 ```toml
