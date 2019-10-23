@@ -3,7 +3,10 @@
 - https://github.com/Coffee2CodeNL/gebaar-libinput/pull/25 adding error catching to config parse
 - https://github.com/gabrielstedman/gebaar-libinput adding touch support
 
-***Other changes include adding a config option which determines whether touchpad or touchscreen gestures are used as well as having different config options for each type***
+***Other changes include:***
+- Allowing different commands to be run depending on touchpad or touchscreen mode
+- Adding a config option which determines the initial mode gebaard runs in
+- Adding support for switch events for 2 in 1 laptops
 
 Gebaar
 =========
@@ -89,18 +92,39 @@ right = ""
 [commands-pinch]
 in = ""
 out = ""
+
+[command-switch]
+laptop = ""
+tablet = ""
 ```
 
 ### Fork Notes
-An additional config option can be added which is listed below. This manually sets whether Gebaar attempts to recognize touchscreen gestures or touchpad gestures:
+Additional config options can be added which are listed below:
 
 ```toml
 [interact.type]
 type = ""
 ```
 
+This manually sets whether Gebaar attempts to recognize touchscreen gestures or touchpad gestures on startup. It is overwritten by the real mode when a switch event occurs. </br>Options are `"TOUCH"` (touchscreen) or `"GESTURE"` (touchpad). <br>Any other values cause Gebaar to attempt to auto-detect which is provided, which usually falls back to `"GESTURE"` if available.
 
-Options are `"TOUCH"` (touchscreen) or `"GESTURE"` (touchpad). <br>Any other values cause Gebaar to attempt to auto-detect which is provided, which usually falls back to `"GESTURE"` if available.
+```toml
+[[command-swipe-gesture]]
+fingers =
+
+[[command-swipe-touch]]
+fingers =
+```
+`command-swipe-gesture` commands are run on detected touchpad gestures. `command-swipe-touch` commands are run on detected touchscreen gestures.
+`fingers` option can be 2 or greater
+
+```toml
+[command-switch]
+laptop = ""
+tablet = ""
+```
+Sets what commands to run when computer switches from laptop to tablet mode. Programs which do not fork must be backgrounded or else gebaar will hang until the program exits. ie `tablet = "onboard &"`
+
 
 ### Examples
 
@@ -125,22 +149,16 @@ right = "bspc desktop -f next"
 
 Add `gebaard -b` to `~/.config/bspwm/bspwmrc`
 
-**Switching between touchpad and touchscreen**
+**Starting gebaar at boot with Systemd**
 
-Using the following two user systemd units you can have gebaar automatically run at boot, restart if it closes, and switch between touchscreen and touchpad recognition modes.
-<details>
-  <summary>~/.config/systemd/user/gebaard-laptop.service</summary>
-
+_~/.config/systemd/user/gebaard.service_
 ```sh
 [Unit]
 Description=Gebaar Daemon
 Documentation=https://github.com/NICHOLAS85/gebaar-libinput
-Before=gebaard-tablet.service
-Conflicts=gebaard-tablet.service
 
 [Service]
-ExecStartPre=/usr/bin/sed -i 's/type = .*/type = "GESTURE"/g' %h/.config/gebaar/gebaard.toml
-ExecStart=/usr/local/bin/gebaard -v
+ExecStart=/usr/local/bin/gebaard
 Environment=DISPLAY=:0
 Restart=always
 
@@ -148,50 +166,10 @@ Restart=always
 WantedBy=default.target
 ```
 
-</details>
-
-<details>
-  <summary>~/.config/systemd/user/gebaard-tablet.service</summary>
-
+Once the file is in place simply run the following once to enable and run gebaar automatically.
 ```sh
-[Unit]
-Description=Gebaar Daemon
-Documentation=https://github.com/NICHOLAS85/gebaar-libinput
-after=gebaard-laptop.service
-Conflicts=gebaard-laptop.service
-
-[Service]
-ExecStartPre=/usr/bin/sed -i 's/type = .*/type = "TOUCH"/g' %h/.config/gebaar/gebaard.toml
-ExecStart=/usr/local/bin/gebaard -v
-Environment=DISPLAY=:0
-Restart=always
-
-[Install]
-WantedBy=default.target
+$ systemctl --user enable gebaard; systemctl --user start gebaard
 ```
-
-</details>
-
-You must have the following lines somewhere in your config for these units to work.
-```toml
-[interact.type]
-type = ""
-```
-
-Once these files are in place simply run the following once to enable and run gebaar automatically.
-```sh
-$ systemctl --user enable gebaard-laptop gebaard-tablet; systemctl --user start gebaard-laptop
-```
-To switch to touchscreen mode run:
-```sh
-$ systemctl --user start gebaard-tablet
-```
-and to switch to touchpad mode run (This mode is started at boot):
-```sh
-$ systemctl --user start gebaard-laptop
-```
-
-These commands can be placed in scripts for example in https://github.com/alesguzik/linux_detect_tablet_mode to automatically switch between modes when switching a convertible laptop.
 
 ### Repository versions
 
@@ -206,7 +184,9 @@ These commands can be placed in scripts for example in https://github.com/alesgu
 - [ ] Receiving touch pinch/zoom events from libinput
 - [ ] Receiving rotation events from libinput
 - [ ] Receiving touch rotation events from libinput
+- [ ] Adjusting swipe events based on device orientation
 - [x] Separate config options for touchpad and touchscreen gestures
+- [x] Receiving switch events from libinput
 - [x] Converting libinput events to motions
 - [x] Running commands based on motions
 - [x] Refactor code to be up to Release standards, instead of testing-hell

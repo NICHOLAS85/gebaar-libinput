@@ -71,6 +71,9 @@ void gebaar::config::Config::load_config()
             pinch_in_command = *config->get_qualified_as<std::string>("command-pinch.in");
             pinch_out_command = *config->get_qualified_as<std::string>("command-pinch.out");
 
+            laptop_mode_command = *config->get_qualified_as<std::string>("command-switch.laptop");
+            tablet_mode_command = *config->get_qualified_as<std::string>("command-switch.tablet");
+
             interact_type = *config->get_qualified_as<std::string>("interact.type.type");
 
             loaded = true;

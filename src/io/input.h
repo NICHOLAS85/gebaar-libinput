@@ -106,6 +106,8 @@ private:
     void handle_swipe_event_with_coords(libinput_event_gesture* gev);
 
     void handle_pinch_event(libinput_event_gesture* gev);
+
+    void handle_switch_event(libinput_event_switch* gev);
 };
 }
 

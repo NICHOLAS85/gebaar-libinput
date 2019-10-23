@@ -246,6 +246,27 @@ void gebaar::io::Input::handle_pinch_event(libinput_event_gesture* gev)
 }
 
 /**
+ * Handles switch events.
+ *
+ * @param gev Switch Event
+ * 0 == laptop
+ * 1 == tablet
+ */
+void gebaar::io::Input::handle_switch_event(libinput_event_switch* gev)
+{
+    int state = libinput_event_switch_get_switch_state(gev);
+    if (state == 0) {
+        spdlog::get("main")->debug("[{}] at {} - {}: Switch event laptop mode", FN, __LINE__, __func__);
+        std::system(config->laptop_mode_command.c_str());
+        swipe_event_group = "GESTURE";
+    } else {
+        spdlog::get("main")->debug("[{}] at {} - {}: Switch event tablet mode", FN, __LINE__, __func__);
+        std::system(config->tablet_mode_command.c_str());
+        swipe_event_group = "TOUCH";
+    }
+}
+
+/**
  * Initialize the input system
  * @return bool
  */
@@ -398,6 +419,7 @@ void gebaar::io::Input::handle_event()
             handle_pinch_event(libinput_event_get_gesture_event(libinput_event));
             break;
         case LIBINPUT_EVENT_SWITCH_TOGGLE:
+            handle_switch_event(libinput_event_get_switch_event(libinput_event));
             break;
         }
 
