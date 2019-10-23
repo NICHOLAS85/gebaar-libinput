@@ -3,7 +3,7 @@
 - https://github.com/Coffee2CodeNL/gebaar-libinput/pull/25 adding error catching to config parse
 - https://github.com/gabrielstedman/gebaar-libinput adding touch support
 
-***Other changes include adding a config option which determines whether touchpad or touchscreen gestures are used***
+***Other changes include allowing gebaar to detect touch and gesture events simultaneously as well as having different config options for each type***
 
 Gebaar
 =========
@@ -42,7 +42,7 @@ Click to join: [![Discord](https://img.shields.io/discord/548978799136473106.svg
 13. Reboot and see the magic
 
 ```toml
-[[command-swipe]]
+[[command-swipe-gesture]]
 fingers = 3
 left_up = ""
 right_up = ""
@@ -53,7 +53,7 @@ down = ""
 left = ""
 right = ""
 
-[[command-swipe]]
+[[command-swipe-gesture]]
 fingers = 4
 left_up = ""
 right_up = ""
@@ -64,20 +64,32 @@ down = ""
 left = ""
 right = ""
 
-[commands.pinch]
+[[command-swipe-touch]]
+fingers = 3
+left_up = ""
+right_up = ""
+up = ""
+left_down = ""
+right_down = ""
+down = ""
+left = ""
+right = ""
+
+[[command-swipe-touch]]
+fingers = 4
+left_up = ""
+right_up = ""
+up = ""
+left_down = ""
+right_down = ""
+down = ""
+left = ""
+right = ""
+
+[commands-pinch]
 in = ""
 out = ""
 ```
-
-### Fork Notes
-An additional config option can be added which is listed below. This manually sets whether Gebaar attempts to recognize touchscreen gestures or touchpad gestures:
-
-```toml
-[interact.type]
-type = ""
-```
-
-Options are `"TOUCH"` (touchscreen) or `"GESTURE"` (touchpad). <br>Any other values cause Gebaar to attempt to auto-detect which is provided, which usually falls back to `"GESTURE"` if available.
 
 ### Examples
 
@@ -85,14 +97,14 @@ Options are `"TOUCH"` (touchscreen) or `"GESTURE"` (touchpad). <br>Any other val
 
 _~/.config/gebaar/gebaard.toml_
 ```toml
-[[command-swipe]]
+[[command-swipe-gesture]]
 fingers = 3
 up = "bspc node -f north"
 down = "bspc node -f south"
 left = "bspc node -f west"
 right = "bspc node -f east"
 
-[[command-swipe]]
+[[command-swipe-gesture]]
 fingers = 4
 up = "rofi -show combi"
 down = ""
@@ -102,42 +114,18 @@ right = "bspc desktop -f next"
 
 Add `gebaard -b` to `~/.config/bspwm/bspwmrc`
 
-**Switching between touchpad and touchscreen**
+**Using Systemd to start gebaar**
 
-Using the following two user systemd units you can have a dedicated configuration file for touchscreen mode and touchpad mode as well as a command to run each when switching.
+Using the following user systemd unit you can have gebaar automatically run at boot and restart if it closes.
 <details>
-  <summary>~/.config/systemd/user/gebaard-laptop.service</summary>
-
-  ```sh
-[Unit]
-Description=Gebaar Daemon
-Documentation=https://github.com/NICHOLAS85/gebaar-libinput
-Before=gebaard-tablet.service
-Conflicts=gebaard-tablet.service
-
-[Service]
-ExecStartPre=/usr/bin/cp -f %h/.config/gebaar/gebaard-laptop.toml %h/.config/gebaar/gebaard.toml
-ExecStart=/usr/local/bin/gebaard
-Environment=DISPLAY=:0
-Restart=always
-
-[Install]
-WantedBy=default.target
-  ```
-
-</details>
-<details>
-  <summary>~/.config/systemd/user/gebaard-tablet.service</summary>
+  <summary>~/.config/systemd/user/gebaard.service</summary>
 
 ```sh
 [Unit]
 Description=Gebaar Daemon
 Documentation=https://github.com/NICHOLAS85/gebaar-libinput
-After=gebaard-laptop.service
-Conflicts=gebaard-laptop.service
 
 [Service]
-ExecStartPre=/usr/bin/cp -f %h/.config/gebaar/gebaard-tablet.toml %h/.config/gebaar/gebaard.toml
 ExecStart=/usr/local/bin/gebaard
 Environment=DISPLAY=:0
 Restart=always
@@ -148,76 +136,10 @@ WantedBy=default.target
 
 </details>
 
-Use the following config files as a basis for your own configuration, it is important ```[interact.type]``` is set to the corresponding value for each config and that they are named like listed.
-
-<details>
-  <summary>~/.config/gebaar/gebaard-laptop.toml</summary>
-
-```toml
-[[command-swipe]]
-fingers = 3
-left = "xdotool key alt+Right"
-right = "xdotool key alt+Left"
-
-[[command-swipe]]
-fingers = 4
-up = 'qdbus org.kde.kglobalaccel /component/kwin invokeShortcut "Window Maximize"'
-down = 'qdbus org.kde.kglobalaccel /component/kwin invokeShortcut "MinimizeAll"'
-left = 'qdbus org.kde.kglobalaccel /component/kwin invokeShortcut "Window Quick Tile Left"'
-right = 'qdbus org.kde.kglobalaccel /component/kwin invokeShortcut "Window Quick Tile Right"'
-
-[commands.pinch]
-in = "xdotool key ctrl+shift+t"
-
-[interact.type]
-type = "GESTURE"
-```
-
-</details>
-
-<details>
-  <summary>~/.config/gebaar/gebaard-tablet.toml</summary>
-
-```toml
-[[command-swipe]]
-fingers = 2
-up = "dbus-send --type=method_call --dest=org.onboard.Onboard /org/onboard/Onboard/Keyboard org.onboard.Onboard.Keyboard.ToggleVisible"
-left = "xdotool key alt+Right"
-right = "xdotool key alt+Left"
-
-
-[[command-swipe]]
-fingers = 3
-up = 'qdbus org.kde.kglobalaccel /component/kwin invokeShortcut "Expose"'
-down = 'qdbus org.kde.kglobalaccel /component/kwin invokeShortcut "Window Minimize"'
-
-[[command-swipe]]
-fingers = 4
-up = 'qdbus org.kde.kglobalaccel /component/kwin invokeShortcut "Window Maximize"'
-down = 'qdbus org.kde.kglobalaccel /component/kwin invokeShortcut "MinimizeAll"'
-left = 'qdbus org.kde.kglobalaccel /component/kwin invokeShortcut "Window Quick Tile Left"'
-right = 'qdbus org.kde.kglobalaccel /component/kwin invokeShortcut "Window Quick Tile Right"'
-
-[interact.type]
-type = "TOUCH"
-```
-
-</details>
-
-Once these files are in place simply run the following once to enable and run gebaar automatically at boot.
+Once this file is in place simply run the following once to enable and run gebaar automatically.
 ```sh
-$ systemctl --user enable gebaard-laptop gebaard-tablet
+$ systemctl --user enable gebaard; systemctl --user start gebaard
 ```
-To switch to touchscreen mode run:
-```sh
-$ systemctl --user start gebaard-tablet
-```
-and to switch to touchpad mode run (This mode is started at boot):
-```sh
-$ systemctl --user start gebaard-laptop
-```
-
-These commands can be placed in scripts for example in https://github.com/alesguzik/linux_detect_tablet_mode to automatically switch between modes when switching a convertible laptop.
 
 ### Repository versions
 
@@ -232,7 +154,7 @@ These commands can be placed in scripts for example in https://github.com/alesgu
 - [ ] Receiving touch pinch/zoom events from libinput
 - [ ] Receiving rotation events from libinput
 - [ ] Receiving touch rotation events from libinput
-- [ ] Separate config files for touchpad and touchscreen
+- [x] Separate config options for touchpad and touchscreen gestures
 - [x] Converting libinput events to motions
 - [x] Running commands based on motions
 - [x] Refactor code to be up to Release standards, instead of testing-hell

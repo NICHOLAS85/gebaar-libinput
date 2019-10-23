@@ -48,18 +48,28 @@ void gebaar::config::Config::load_config()
         if (config_file_exists()) {
             config = cpptoml::parse_file(std::filesystem::path(config_file_path));
             spdlog::get("main")->debug("[{}] at {} - Config parsed", FN, __LINE__);
-            spdlog::get("main")->debug("[{}] at {} - Generating SWIPE_COMMANDS", FN, __LINE__);
-            auto command_swipe_table = config->get_table_array_qualified("command-swipe");
-            for (const auto& table : *command_swipe_table)
+            spdlog::get("main")->debug("[{}] at {} - Generating gesture SWIPE_COMMANDS", FN, __LINE__);
+            auto gesture_command_swipe_table = config->get_table_array_qualified("command-swipe-gesture");
+            for (const auto& table : *gesture_command_swipe_table)
             {
                 auto fingers = table->get_as<int>("fingers");
                 for (std::pair<int, std::string> element : SWIPE_COMMANDS) {
-                    commands[*fingers][element.second] = table->get_qualified_as<std::string>(element.second).value_or("");
+                    gesture_commands[*fingers][element.second] = table->get_qualified_as<std::string>(element.second).value_or("");
                 }
             }
 
-            pinch_in_command = *config->get_qualified_as<std::string>("commands.pinch.in");
-            pinch_out_command = *config->get_qualified_as<std::string>("commands.pinch.out");
+            spdlog::get("main")->debug("[{}] at {} - Generating touch SWIPE_COMMANDS", FN, __LINE__);
+            auto touch_command_swipe_table = config->get_table_array_qualified("command-swipe-touch");
+            for (const auto& table : *touch_command_swipe_table)
+            {
+                auto fingers = table->get_as<int>("fingers");
+                for (std::pair<int, std::string> element : SWIPE_COMMANDS) {
+                    touch_commands[*fingers][element.second] = table->get_qualified_as<std::string>(element.second).value_or("");
+                }
+            }
+
+            pinch_in_command = *config->get_qualified_as<std::string>("command-pinch.in");
+            pinch_out_command = *config->get_qualified_as<std::string>("command-pinch.out");
 
             interact_type = *config->get_qualified_as<std::string>("interact.type.type");
 
@@ -108,11 +118,18 @@ gebaar::config::Config::Config()
  * Given a number of fingers and a swipe type return configured command
  */
 
-std::string gebaar::config::Config::get_command(int fingers, int swipe_type){
+std::string gebaar::config::Config::get_command(int fingers, int swipe_type, int method){
     if (fingers > 1 && swipe_type >= MIN_DIRECTION && swipe_type <= MAX_DIRECTION){
-        if (commands.count(fingers)) {
-            spdlog::get("main")->info("[{}] at {} - gesture: {} finger {} ... executing", FN, __LINE__, fingers, SWIPE_COMMANDS.at(swipe_type));
-            return commands[fingers][SWIPE_COMMANDS.at(swipe_type)];
+        if (method == 0) {
+            if (gesture_commands.count(fingers)) {
+                spdlog::get("main")->info("[{}] at {} - gesture: {} finger {} ... executing", FN, __LINE__, fingers, SWIPE_COMMANDS.at(swipe_type));
+                return gesture_commands[fingers][SWIPE_COMMANDS.at(swipe_type)];
+            }
+        } else {
+            if (touch_commands.count(fingers)) {
+                spdlog::get("main")->info("[{}] at {} - gesture: {} finger {} ... executing", FN, __LINE__, fingers, SWIPE_COMMANDS.at(swipe_type));
+                return touch_commands[fingers][SWIPE_COMMANDS.at(swipe_type)];
+            }
         }
     }
     return "";

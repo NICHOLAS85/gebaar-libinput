@@ -79,9 +79,9 @@ int gebaar::io::Input::get_swipe_type(double sdx, double sdy)
     return swipe_type;
 }
 
-void gebaar::io::Input::apply_swipe(int swipe_type, int fingers)
+void gebaar::io::Input::apply_swipe(int swipe_type, int fingers, int method)
 {
-    std::string command = config->get_command(fingers, swipe_type);
+    std::string command = config->get_command(fingers, swipe_type, method);
     spdlog::get("main")->debug("[{}] at {} - {}, fgrs: {}, swpe-typ: {}", FN, __LINE__, __func__, fingers, swipe_type);
     if (command.length() > 0) {
         std::system(command.c_str());
@@ -163,7 +163,7 @@ void gebaar::io::Input::handle_touch_event_up(libinput_event_touch* tev)
         }
 
         if (touch_swipe_event.isClean) {
-            apply_swipe(swipe_type, touch_swipe_event.fingers);
+            apply_swipe(swipe_type, touch_swipe_event.fingers, 1);
         }
 
         spdlog::get("main")->debug("[{}] at {} - {}, fgrs: {}, d-slts: {}, u-slts: {}, d-xy: {}, prv-xy: {}", FN, __LINE__, __func__, touch_swipe_event.fingers, touch_swipe_event.down_slots.size(), touch_swipe_event.up_slots.size(), touch_swipe_event.delta_xy.size(), touch_swipe_event.prev_xy.size());
@@ -211,7 +211,7 @@ void gebaar::io::Input::handle_swipe_event_without_coords(libinput_event_gesture
         double x = gesture_swipe_event.x;
         double y = gesture_swipe_event.y;
         int swipe_type = get_swipe_type(x, y);
-        apply_swipe(swipe_type, gesture_swipe_event.fingers);
+        apply_swipe(swipe_type, gesture_swipe_event.fingers, 0);
 
         gesture_swipe_event = {};
     }
@@ -310,14 +310,6 @@ bool gebaar::io::Input::gesture_device_exists()
     return !swipe_event_group.empty();
 }
 
-bool gebaar::io::Input::check_chosen_event(std::string ev)
-{
-    if (swipe_event_group == ev) {
-        return true;
-    }
-    return false;
-}
-
 /**
  * Handle an event from libinput and run the appropriate action per event type
  */
@@ -327,19 +319,13 @@ void gebaar::io::Input::handle_event()
     while ((libinput_event = libinput_get_event(libinput))) {
         switch (libinput_event_get_type(libinput_event)) {
         case LIBINPUT_EVENT_GESTURE_SWIPE_BEGIN:
-            if (check_chosen_event("GESTURE")) {
-                handle_swipe_event_without_coords(libinput_event_get_gesture_event(libinput_event), true);
-            }
+            handle_swipe_event_without_coords(libinput_event_get_gesture_event(libinput_event), true);
             break;
         case LIBINPUT_EVENT_GESTURE_SWIPE_UPDATE:
-            if (check_chosen_event("GESTURE")) {
-                handle_swipe_event_with_coords(libinput_event_get_gesture_event(libinput_event));
-            }
+            handle_swipe_event_with_coords(libinput_event_get_gesture_event(libinput_event));
             break;
         case LIBINPUT_EVENT_GESTURE_SWIPE_END:
-            if (check_chosen_event("GESTURE")) {
-                handle_swipe_event_without_coords(libinput_event_get_gesture_event(libinput_event), false);
-            }
+            handle_swipe_event_without_coords(libinput_event_get_gesture_event(libinput_event), false);
             break;
         case LIBINPUT_EVENT_NONE:
             break;
@@ -358,19 +344,13 @@ void gebaar::io::Input::handle_event()
         case LIBINPUT_EVENT_POINTER_AXIS:
             break;
         case LIBINPUT_EVENT_TOUCH_DOWN:
-            if (check_chosen_event("TOUCH")) {
-                handle_touch_event_down(libinput_event_get_touch_event(libinput_event));
-            }
+            handle_touch_event_down(libinput_event_get_touch_event(libinput_event));
             break;
         case LIBINPUT_EVENT_TOUCH_UP:
-            if (check_chosen_event("TOUCH")) {
-                handle_touch_event_up(libinput_event_get_touch_event(libinput_event));
-            }
+            handle_touch_event_up(libinput_event_get_touch_event(libinput_event));
             break;
         case LIBINPUT_EVENT_TOUCH_MOTION:
-            if (check_chosen_event("TOUCH")) {
-                handle_touch_event_motion(libinput_event_get_touch_event(libinput_event));
-            }
+            handle_touch_event_motion(libinput_event_get_touch_event(libinput_event));
             break;
         case LIBINPUT_EVENT_TOUCH_CANCEL:
             break;

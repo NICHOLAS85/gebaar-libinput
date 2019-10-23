@@ -69,8 +69,6 @@ private:
 
     bool gesture_device_exists();
 
-    bool check_chosen_event(std::string ev);
-
     static int open_restricted(const char* path, int flags, void* user_data)
     {
         int fd = open(path, flags);
@@ -89,7 +87,7 @@ private:
 
     void check_multitouch_down_up(std::vector<std::pair<int, double>> slots, std::string downup);
 
-    void apply_swipe(int swipe_type, int fingers);
+    void apply_swipe(int swipe_type, int fingers, int method);
 
     int get_swipe_type(double sdx, double sdy);
 

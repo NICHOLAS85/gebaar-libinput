@@ -40,13 +40,14 @@ namespace gebaar::config {
 
         void load_config();
 
-        std::string get_command(int fingers, int swipe_type);
+        std::string get_command(int fingers, int swipe_type, int method);
         std::string pinch_in_command;
         std::string pinch_out_command;
         std::string interact_type;
 
     private:
-        std::map<int, std::map<std::string, std::string>> commands;
+        std::map<int, std::map<std::string, std::string>> gesture_commands;
+        std::map<int, std::map<std::string, std::string>> touch_commands;
         bool config_file_exists();
 
         bool find_config_file();
