@@ -3,7 +3,7 @@
 - https://github.com/Coffee2CodeNL/gebaar-libinput/pull/25 adding error catching to config parse
 - https://github.com/gabrielstedman/gebaar-libinput adding touch support
 
-***Other changes include allowing gebaar to detect touch and gesture events simultaneously as well as having different config options for each type***
+***Other changes include adding a config option which determines whether touchpad or touchscreen gestures are used as well as having different config options for each type***
 
 Gebaar
 =========
@@ -91,6 +91,17 @@ in = ""
 out = ""
 ```
 
+### Fork Notes
+An additional config option can be added which is listed below. This manually sets whether Gebaar attempts to recognize touchscreen gestures or touchpad gestures:
+
+```toml
+[interact.type]
+type = ""
+```
+
+
+Options are `"TOUCH"` (touchscreen) or `"GESTURE"` (touchpad). <br>Any other values cause Gebaar to attempt to auto-detect which is provided, which usually falls back to `"GESTURE"` if available.
+
 ### Examples
 
 **bspwm**
@@ -114,19 +125,22 @@ right = "bspc desktop -f next"
 
 Add `gebaard -b` to `~/.config/bspwm/bspwmrc`
 
-**Using Systemd to start gebaar**
+**Switching between touchpad and touchscreen**
 
-Using the following user systemd unit you can have gebaar automatically run at boot and restart if it closes.
+Using the following two user systemd units you can have gebaar automatically run at boot, restart if it closes, and switch between touchscreen and touchpad recognition modes.
 <details>
-  <summary>~/.config/systemd/user/gebaard.service</summary>
+  <summary>~/.config/systemd/user/gebaard-laptop.service</summary>
 
 ```sh
 [Unit]
 Description=Gebaar Daemon
 Documentation=https://github.com/NICHOLAS85/gebaar-libinput
+Before=gebaard-tablet.service
+Conflicts=gebaard-tablet.service
 
 [Service]
-ExecStart=/usr/local/bin/gebaard
+ExecStartPre=/usr/bin/sed -i 's/type = .*/type = "GESTURE"/g' %h/.config/gebaar/gebaard.toml
+ExecStart=/usr/local/bin/gebaard -v
 Environment=DISPLAY=:0
 Restart=always
 
@@ -136,10 +150,48 @@ WantedBy=default.target
 
 </details>
 
-Once this file is in place simply run the following once to enable and run gebaar automatically.
+<details>
+  <summary>~/.config/systemd/user/gebaard-tablet.service</summary>
+
 ```sh
-$ systemctl --user enable gebaard; systemctl --user start gebaard
+[Unit]
+Description=Gebaar Daemon
+Documentation=https://github.com/NICHOLAS85/gebaar-libinput
+after=gebaard-laptop.service
+Conflicts=gebaard-laptop.service
+
+[Service]
+ExecStartPre=/usr/bin/sed -i 's/type = .*/type = "TOUCH"/g' %h/.config/gebaar/gebaard.toml
+ExecStart=/usr/local/bin/gebaard -v
+Environment=DISPLAY=:0
+Restart=always
+
+[Install]
+WantedBy=default.target
 ```
+
+</details>
+
+You must have the following lines somewhere in your config for these units to work.
+```toml
+[interact.type]
+type = ""
+```
+
+Once these files are in place simply run the following once to enable and run gebaar automatically.
+```sh
+$ systemctl --user enable gebaard-laptop gebaard-tablet; systemctl --user start gebaard-laptop
+```
+To switch to touchscreen mode run:
+```sh
+$ systemctl --user start gebaard-tablet
+```
+and to switch to touchpad mode run (This mode is started at boot):
+```sh
+$ systemctl --user start gebaard-laptop
+```
+
+These commands can be placed in scripts for example in https://github.com/alesguzik/linux_detect_tablet_mode to automatically switch between modes when switching a convertible laptop.
 
 ### Repository versions
 

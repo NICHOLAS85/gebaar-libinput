@@ -310,6 +310,14 @@ bool gebaar::io::Input::gesture_device_exists()
     return !swipe_event_group.empty();
 }
 
+bool gebaar::io::Input::check_chosen_event(std::string ev)
+{
+    if (swipe_event_group == ev) {
+        return true;
+    }
+    return false;
+}
+
 /**
  * Handle an event from libinput and run the appropriate action per event type
  */
@@ -319,13 +327,19 @@ void gebaar::io::Input::handle_event()
     while ((libinput_event = libinput_get_event(libinput))) {
         switch (libinput_event_get_type(libinput_event)) {
         case LIBINPUT_EVENT_GESTURE_SWIPE_BEGIN:
-            handle_swipe_event_without_coords(libinput_event_get_gesture_event(libinput_event), true);
+            if (check_chosen_event("GESTURE")) {
+                handle_swipe_event_without_coords(libinput_event_get_gesture_event(libinput_event), true);
+            }
             break;
         case LIBINPUT_EVENT_GESTURE_SWIPE_UPDATE:
-            handle_swipe_event_with_coords(libinput_event_get_gesture_event(libinput_event));
+            if (check_chosen_event("GESTURE")) {
+                handle_swipe_event_with_coords(libinput_event_get_gesture_event(libinput_event));
+            }
             break;
         case LIBINPUT_EVENT_GESTURE_SWIPE_END:
-            handle_swipe_event_without_coords(libinput_event_get_gesture_event(libinput_event), false);
+            if (check_chosen_event("GESTURE")) {
+                handle_swipe_event_without_coords(libinput_event_get_gesture_event(libinput_event), false);
+            }
             break;
         case LIBINPUT_EVENT_NONE:
             break;
@@ -344,13 +358,19 @@ void gebaar::io::Input::handle_event()
         case LIBINPUT_EVENT_POINTER_AXIS:
             break;
         case LIBINPUT_EVENT_TOUCH_DOWN:
-            handle_touch_event_down(libinput_event_get_touch_event(libinput_event));
+            if (check_chosen_event("TOUCH")) {
+                handle_touch_event_down(libinput_event_get_touch_event(libinput_event));
+            }
             break;
         case LIBINPUT_EVENT_TOUCH_UP:
-            handle_touch_event_up(libinput_event_get_touch_event(libinput_event));
+            if (check_chosen_event("TOUCH")) {
+                handle_touch_event_up(libinput_event_get_touch_event(libinput_event));
+            }
             break;
         case LIBINPUT_EVENT_TOUCH_MOTION:
-            handle_touch_event_motion(libinput_event_get_touch_event(libinput_event));
+            if (check_chosen_event("TOUCH")) {
+                handle_touch_event_motion(libinput_event_get_touch_event(libinput_event));
+            }
             break;
         case LIBINPUT_EVENT_TOUCH_CANCEL:
             break;

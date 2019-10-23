@@ -69,6 +69,8 @@ private:
 
     bool gesture_device_exists();
 
+    bool check_chosen_event(std::string ev);
+
     static int open_restricted(const char* path, int flags, void* user_data)
     {
         int fd = open(path, flags);
