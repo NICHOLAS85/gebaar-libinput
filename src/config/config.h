@@ -40,7 +40,7 @@ namespace gebaar::config {
 
         void load_config();
 
-        std::string get_command(int fingers, int swipe_type, int method);
+        std::string get_command(int fingers, int swipe_type, std::string method);
         std::string pinch_in_command;
         std::string pinch_out_command;
         std::string interact_type;

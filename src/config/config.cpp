@@ -118,9 +118,9 @@ gebaar::config::Config::Config()
  * Given a number of fingers and a swipe type return configured command
  */
 
-std::string gebaar::config::Config::get_command(int fingers, int swipe_type, int method){
+std::string gebaar::config::Config::get_command(int fingers, int swipe_type, std::string method){
     if (fingers > 1 && swipe_type >= MIN_DIRECTION && swipe_type <= MAX_DIRECTION){
-        if (method == 0) {
+        if (strcmp(method.c_str(), "GESTURE") == 0) {
             if (gesture_commands.count(fingers)) {
                 spdlog::get("main")->info("[{}] at {} - gesture: {} finger {} ... executing", FN, __LINE__, fingers, SWIPE_COMMANDS.at(swipe_type));
                 return gesture_commands[fingers][SWIPE_COMMANDS.at(swipe_type)];

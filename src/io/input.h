@@ -89,7 +89,7 @@ private:
 
     void check_multitouch_down_up(std::vector<std::pair<int, double>> slots, std::string downup);
 
-    void apply_swipe(int swipe_type, int fingers, int method);
+    void apply_swipe(int swipe_type, int fingers, std::string method);
 
     int get_swipe_type(double sdx, double sdy);
 

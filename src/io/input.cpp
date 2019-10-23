@@ -79,7 +79,7 @@ int gebaar::io::Input::get_swipe_type(double sdx, double sdy)
     return swipe_type;
 }
 
-void gebaar::io::Input::apply_swipe(int swipe_type, int fingers, int method)
+void gebaar::io::Input::apply_swipe(int swipe_type, int fingers, std::string method)
 {
     std::string command = config->get_command(fingers, swipe_type, method);
     spdlog::get("main")->debug("[{}] at {} - {}, fgrs: {}, swpe-typ: {}", FN, __LINE__, __func__, fingers, swipe_type);
@@ -163,7 +163,7 @@ void gebaar::io::Input::handle_touch_event_up(libinput_event_touch* tev)
         }
 
         if (touch_swipe_event.isClean) {
-            apply_swipe(swipe_type, touch_swipe_event.fingers, 1);
+            apply_swipe(swipe_type, touch_swipe_event.fingers, swipe_event_group);
         }
 
         spdlog::get("main")->debug("[{}] at {} - {}, fgrs: {}, d-slts: {}, u-slts: {}, d-xy: {}, prv-xy: {}", FN, __LINE__, __func__, touch_swipe_event.fingers, touch_swipe_event.down_slots.size(), touch_swipe_event.up_slots.size(), touch_swipe_event.delta_xy.size(), touch_swipe_event.prev_xy.size());
@@ -211,7 +211,7 @@ void gebaar::io::Input::handle_swipe_event_without_coords(libinput_event_gesture
         double x = gesture_swipe_event.x;
         double y = gesture_swipe_event.y;
         int swipe_type = get_swipe_type(x, y);
-        apply_swipe(swipe_type, gesture_swipe_event.fingers, 0);
+        apply_swipe(swipe_type, gesture_swipe_event.fingers, swipe_event_group);
 
         gesture_swipe_event = {};
     }
