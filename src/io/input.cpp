@@ -256,14 +256,13 @@ void gebaar::io::Input::handle_switch_event(libinput_event_switch* gev)
 {
     int state = libinput_event_switch_get_switch_state(gev);
     if (state == 0) {
-        spdlog::get("main")->debug("[{}] at {} - {}: Switch event laptop mode", FN, __LINE__, __func__);
         std::system(config->laptop_mode_command.c_str());
         swipe_event_group = "GESTURE";
     } else {
-        spdlog::get("main")->debug("[{}] at {} - {}: Switch event tablet mode", FN, __LINE__, __func__);
         std::system(config->tablet_mode_command.c_str());
         swipe_event_group = "TOUCH";
     }
+    spdlog::get("main")->info("[{}] at {} - switch: {} mode ... executing", FN, __LINE__, swipe_event_group);
 }
 
 /**
