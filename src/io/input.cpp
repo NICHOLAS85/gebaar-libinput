@@ -303,7 +303,11 @@ gebaar::io::Input::~Input()
 bool gebaar::io::Input::gesture_device_exists()
 {
     swipe_event_group = "";
-    if (strcmp(config->interact_type.c_str(), "TOUCH") == 0 || strcmp(config->interact_type.c_str(), "GESTURE") == 0){
+    if (strcmp(config->interact_type.c_str(), "BOTH") == 0 ) {
+        spdlog::get("main")->debug("[{}] at {} - {}: Interact type set both", FN, __LINE__, __func__);
+        swipe_event_group = "BOTH";
+        both_event_group = true;
+    } else if (strcmp(config->interact_type.c_str(), "TOUCH") == 0 || strcmp(config->interact_type.c_str(), "GESTURE") == 0){
         spdlog::get("main")->debug("[{}] at {} - {}: Interact type set manually", FN, __LINE__, __func__);
         swipe_event_group = config->interact_type;
     } else {
@@ -332,6 +336,10 @@ bool gebaar::io::Input::gesture_device_exists()
 
 bool gebaar::io::Input::check_chosen_event(std::string ev)
 {
+    if (both_event_group) {
+        swipe_event_group = ev;
+        return true;
+    }
     if (swipe_event_group == ev) {
         return true;
     }

@@ -1,12 +1,12 @@
 ***This fork merges the following into Gebaar***
 - https://github.com/Coffee2CodeNL/gebaar-libinput/pull/10 adding pinch in/out gestures
-- https://github.com/Coffee2CodeNL/gebaar-libinput/pull/25 adding error catching to config parse
+- https://github.com/Coffee2CodeNL/gebaar-libinput/pull/25 adding error catching when parsing options
 - https://github.com/gabrielstedman/gebaar-libinput adding touch support
 
 ***Other changes include:***
-- Allowing different commands to be run depending on touchpad or touchscreen mode
+- Allowing different commands to be run depending on touchpad or touchscreen gestures
 - Adding a config option which determines the initial mode gebaard runs in
-- Adding support for switch events for 2 in 1 laptops
+- Adding support to run commands on switch events for 2 in 1 laptops
 
 Gebaar
 =========
@@ -106,7 +106,7 @@ Additional config options can be added which are listed below:
 type = ""
 ```
 
-This manually sets whether Gebaar attempts to recognize touchscreen gestures or touchpad gestures on startup. It is overwritten by the real mode when a switch event occurs. </br>Options are `"TOUCH"` (touchscreen) or `"GESTURE"` (touchpad). <br>Any other values cause Gebaar to attempt to auto-detect which is provided, which usually falls back to `"GESTURE"` if available.
+This manually sets whether Gebaar attempts to recognize touchscreen gestures or touchpad gestures on startup. </br>Options are `"TOUCH"` (touchscreen), `"GESTURE"` (touchpad), or `"BOTH"` which allows recognition of both. If you see any issues using `"BOTH"` I suggest setting it back to your main option. This config option is overwritten by the real available mode when a switch event occurs on 2 in 1 laptops enabling touchpad gestures in laptop mode and touchscreen gestures in tablet mode (unless `"BOTH"` is set, which makes both gesture types recognized at all times). If unset, Gebaar attempts to auto-detect which is provided, which usually falls back to `"GESTURE"` if available.
 
 ```toml
 [[command-swipe-gesture]]
@@ -115,7 +115,7 @@ fingers =
 [[command-swipe-touch]]
 fingers =
 ```
-`command-swipe-gesture` commands are run on detected touchpad gestures. `command-swipe-touch` commands are run on detected touchscreen gestures. Gebaar only runs in one mode at a time but automatically detects switches, changing modes accordingly.
+`command-swipe-gesture` commands are run on detected touchpad gestures. `command-swipe-touch` commands are run on detected touchscreen gestures. Gebaar by default only runs in one mode at a time but automatically detects switches, changing modes accordingly.
 `fingers` option can be 2 or greater
 
 ```toml
@@ -123,7 +123,7 @@ fingers =
 laptop = ""
 tablet = ""
 ```
-Sets what commands to run when computer switches from laptop to tablet mode. Programs which do not fork must be backgrounded or else gebaar will hang until the program exits. ie `tablet = "onboard &"`
+Sets what commands to run when your computer switches from laptop to tablet mode. Programs which do not fork must be backgrounded or else gebaar will hang until the program exits. ie `tablet = "onboard &"`
 
 
 ### Examples

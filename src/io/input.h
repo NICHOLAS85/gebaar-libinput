@@ -64,6 +64,7 @@ private:
     struct udev* udev;
     struct gesture_swipe_event gesture_swipe_event;
     struct touch_swipe_event touch_swipe_event;
+    bool both_event_group = false;
 
     bool initialize_context();
 
