@@ -68,8 +68,15 @@ void gebaar::config::Config::load_config()
                 }
             }
 
-            pinch_in_command = *config->get_qualified_as<std::string>("command-pinch.in");
-            pinch_out_command = *config->get_qualified_as<std::string>("command-pinch.out");
+            spdlog::get("main")->debug("[{}] at {} - Generating PINCH_COMMANDS", FN, __LINE__);
+            auto pinch_command_table = config->get_table_array_qualified("command-pinch");
+            for (const auto& table : *pinch_command_table)
+            {
+                auto fingers = table->get_as<int>("fingers");
+                for (std::pair<int, std::string> element : PINCH_COMMANDS) {
+                    pinch_commands[*fingers][element.second] = table->get_qualified_as<std::string>(element.second).value_or("");
+                }
+            }
 
             laptop_mode_command = *config->get_qualified_as<std::string>("command-switch.laptop");
             tablet_mode_command = *config->get_qualified_as<std::string>("command-switch.tablet");
@@ -128,10 +135,15 @@ std::string gebaar::config::Config::get_command(int fingers, int swipe_type, std
                 spdlog::get("main")->info("[{}] at {} - gesture: {} finger {} ... executing", FN, __LINE__, fingers, SWIPE_COMMANDS.at(swipe_type));
                 return gesture_commands[fingers][SWIPE_COMMANDS.at(swipe_type)];
             }
-        } else {
+        } else if (strcmp(method.c_str(), "TOUCH") == 0) {
             if (touch_commands.count(fingers)) {
                 spdlog::get("main")->info("[{}] at {} - gesture: {} finger {} ... executing", FN, __LINE__, fingers, SWIPE_COMMANDS.at(swipe_type));
                 return touch_commands[fingers][SWIPE_COMMANDS.at(swipe_type)];
+            }
+        } else {
+            if (pinch_commands.count(fingers)) {
+              spdlog::get("main")->info("[{}] at {} - gesture: {} finger {} ... executing", FN, __LINE__, fingers, PINCH_COMMANDS.at(swipe_type));
+              return pinch_commands[fingers][PINCH_COMMANDS.at(swipe_type)];
             }
         }
     }

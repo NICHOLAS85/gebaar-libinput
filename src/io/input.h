@@ -35,6 +35,10 @@ struct gesture_swipe_event {
     double y;
 };
 
+struct pinch_swipe_event {
+    int fingers;
+};
+
 struct touch_swipe_event {
     int fingers;
     double x;
@@ -63,6 +67,7 @@ private:
     struct libinput_event* libinput_event;
     struct udev* udev;
     struct gesture_swipe_event gesture_swipe_event;
+    struct pinch_swipe_event pinch_swipe_event;
     struct touch_swipe_event touch_swipe_event;
     bool both_event_group = false;
 

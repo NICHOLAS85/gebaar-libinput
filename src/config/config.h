@@ -30,6 +30,8 @@
 const std::map<int, std::string> SWIPE_COMMANDS = {
     {1, "left_up"}, {2, "up"},        {3, "right_up"}, {4, "left"},
     {6, "right"},   {7, "left_down"}, {8, "down"},     {9, "right_down"}};
+const std::map<int, std::string> PINCH_COMMANDS = {
+    {1, "in"}, {2, "out"}};
 
 namespace gebaar::config {
     class Config {
@@ -50,6 +52,7 @@ namespace gebaar::config {
     private:
         std::map<int, std::map<std::string, std::string>> gesture_commands;
         std::map<int, std::map<std::string, std::string>> touch_commands;
+        std::map<int, std::map<std::string, std::string>> pinch_commands;
         bool config_file_exists();
 
         bool find_config_file();

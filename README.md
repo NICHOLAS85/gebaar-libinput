@@ -7,6 +7,7 @@
 - Allowing different commands to be run depending on touchpad or touchscreen gestures
 - Adding a config option which determines the initial mode gebaard runs in
 - Adding support to run commands on switch events for 2 in 1 laptops
+- Adding support for variable finger pinch gestures
 
 Gebaar
 =========
@@ -89,7 +90,8 @@ down = ""
 left = ""
 right = ""
 
-[commands-pinch]
+[[commands-pinch]]
+fingers = 2
 in = ""
 out = ""
 

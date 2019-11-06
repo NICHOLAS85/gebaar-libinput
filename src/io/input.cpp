@@ -236,12 +236,13 @@ void gebaar::io::Input::handle_swipe_event_with_coords(libinput_event_gesture* g
 void gebaar::io::Input::handle_pinch_event(libinput_event_gesture* gev)
 {
     double scale = libinput_event_gesture_get_scale(gev);
+    pinch_swipe_event.fingers = libinput_event_gesture_get_finger_count(gev);
     if (scale < 1) {
         // pinch in
-        std::system(config->pinch_in_command.c_str());
+        apply_swipe(1, pinch_swipe_event.fingers, "pinch");
     } else {
         // pinch out
-        std::system(config->pinch_out_command.c_str());
+        apply_swipe(2, pinch_swipe_event.fingers, "pinch");
     }
 }
 
