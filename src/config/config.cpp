@@ -81,7 +81,7 @@ void gebaar::config::Config::load_config()
             laptop_mode_command = *config->get_qualified_as<std::string>("command-switch.laptop");
             tablet_mode_command = *config->get_qualified_as<std::string>("command-switch.tablet");
 
-            interact_type = *config->get_qualified_as<std::string>("interact-type.type");
+            interact_type = *config->get_qualified_as<std::string>("settings.interact.type");
 
             loaded = true;
             spdlog::get("main")->debug("[{}] at {} - Config loaded", FN, __LINE__);
