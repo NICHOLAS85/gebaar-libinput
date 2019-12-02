@@ -207,13 +207,15 @@ void gebaar::io::Input::handle_swipe_event_without_coords(libinput_event_gesture
 {
     if (begin) {
         gesture_swipe_event.fingers = libinput_event_gesture_get_finger_count(gev);
-    } else {
+        gesture_executed = false;
+    } else if (! gesture_executed) {
         double x = gesture_swipe_event.x;
         double y = gesture_swipe_event.y;
         int swipe_type = get_swipe_type(x, y);
         apply_swipe(swipe_type, gesture_swipe_event.fingers, swipe_event_group);
 
         gesture_swipe_event = {};
+        gesture_executed = true;
     }
 }
 
@@ -223,26 +225,42 @@ void gebaar::io::Input::handle_swipe_event_without_coords(libinput_event_gesture
  */
 void gebaar::io::Input::handle_swipe_event_with_coords(libinput_event_gesture* gev)
 {
-    gesture_swipe_event.x += libinput_event_gesture_get_dx(gev);
-    gesture_swipe_event.y += libinput_event_gesture_get_dy(gev);
+    if (! gesture_executed) {
+        int threshold_x = config->swipe_threshold * 1000;
+        int threshold_y = config->swipe_threshold * 500;
+
+        gesture_swipe_event.x += libinput_event_gesture_get_dx_unaccelerated(gev);
+        gesture_swipe_event.y += libinput_event_gesture_get_dy_unaccelerated(gev);
+        if (abs(gesture_swipe_event.x) > threshold_x || abs(gesture_swipe_event.y) > threshold_y) {
+          handle_swipe_event_without_coords(libinput_event_get_gesture_event(libinput_event), false);
+        }
+    }
 }
 
 /**
  * Handles pinch gesture events.
- * Called at the end of the pinch event, so we just need to determine the pinch type.
+ * If it begins, we get the amount of fingers used.
+ * If it ends we just need to determine the pinch type.
  *
  * @param gev Gesture Event
+ * @param begin Boolean to denote begin or end of gesture
  */
-void gebaar::io::Input::handle_pinch_event(libinput_event_gesture* gev)
+void gebaar::io::Input::handle_pinch_event(libinput_event_gesture* gev, bool begin)
 {
-    double scale = libinput_event_gesture_get_scale(gev);
-    pinch_swipe_event.fingers = libinput_event_gesture_get_finger_count(gev);
-    if (scale < 1) {
-        // pinch in
-        apply_swipe(1, pinch_swipe_event.fingers, "pinch");
-    } else {
-        // pinch out
-        apply_swipe(2, pinch_swipe_event.fingers, "pinch");
+    if (begin) {
+        gesture_executed = false;
+        pinch_swipe_event.fingers = libinput_event_gesture_get_finger_count(gev);
+    } else if (! gesture_executed) {
+        double scale = libinput_event_gesture_get_scale(gev);
+        if (scale < 1 - config->pinch_threshold) {
+            // pinch in
+            apply_swipe(1, pinch_swipe_event.fingers, "pinch");
+            gesture_executed = true;
+        } else if (scale > 1 + config->pinch_threshold) {
+            // pinch out
+            apply_swipe(2, pinch_swipe_event.fingers, "pinch");
+            gesture_executed = true;
+        }
     }
 }
 
@@ -305,14 +323,14 @@ bool gebaar::io::Input::gesture_device_exists()
 {
     swipe_event_group = "";
     if (strcmp(config->interact_type.c_str(), "BOTH") == 0 ) {
-        spdlog::get("main")->debug("[{}] at {} - {}: Interact type set both", FN, __LINE__, __func__);
+        spdlog::get("main")->debug("[{}] at {} - {}: Interact type set to BOTH", FN, __LINE__, __func__);
         swipe_event_group = "BOTH";
         both_event_group = true;
     } else if (strcmp(config->interact_type.c_str(), "TOUCH") == 0 || strcmp(config->interact_type.c_str(), "GESTURE") == 0){
-        spdlog::get("main")->debug("[{}] at {} - {}: Interact type set manually", FN, __LINE__, __func__);
+        spdlog::get("main")->debug("[{}] at {} - {}: Interact type set to {}", FN, __LINE__, __func__, config->interact_type.c_str());
         swipe_event_group = config->interact_type;
     } else {
-        spdlog::get("main")->debug("[{}] at {} - {}: Assuming AUTO interact type", FN, __LINE__, __func__);
+        spdlog::get("main")->debug("[{}] at {} - {}: Interact type set to AUTO", FN, __LINE__, __func__);
         while ((libinput_event = libinput_get_event(libinput)) != nullptr) {
             auto device = libinput_event_get_device(libinput_event);
             if (libinput_device_has_capability(device, LIBINPUT_DEVICE_CAP_GESTURE)) {
@@ -420,11 +438,13 @@ void gebaar::io::Input::handle_event()
         case LIBINPUT_EVENT_TABLET_PAD_STRIP:
             break;
         case LIBINPUT_EVENT_GESTURE_PINCH_BEGIN:
+            handle_pinch_event(libinput_event_get_gesture_event(libinput_event), true);
             break;
         case LIBINPUT_EVENT_GESTURE_PINCH_UPDATE:
+            handle_pinch_event(libinput_event_get_gesture_event(libinput_event), false);
             break;
         case LIBINPUT_EVENT_GESTURE_PINCH_END:
-            handle_pinch_event(libinput_event_get_gesture_event(libinput_event));
+            handle_pinch_event(libinput_event_get_gesture_event(libinput_event), false);
             break;
         case LIBINPUT_EVENT_SWITCH_TOGGLE:
             handle_switch_event(libinput_event_get_switch_event(libinput_event));

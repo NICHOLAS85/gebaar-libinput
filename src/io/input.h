@@ -70,6 +70,7 @@ private:
     struct pinch_swipe_event pinch_swipe_event;
     struct touch_swipe_event touch_swipe_event;
     bool both_event_group = false;
+    bool gesture_executed;
 
     bool initialize_context();
 
@@ -111,7 +112,7 @@ private:
 
     void handle_swipe_event_with_coords(libinput_event_gesture* gev);
 
-    void handle_pinch_event(libinput_event_gesture* gev);
+    void handle_pinch_event(libinput_event_gesture* gev, bool begin);
 
     void handle_switch_event(libinput_event_switch* gev);
 };

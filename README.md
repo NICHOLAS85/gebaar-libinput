@@ -8,6 +8,7 @@
 - Adding a config option which determines the initial mode gebaard runs in
 - Adding support to run commands on switch events for 2 in 1 laptops
 - Adding support for variable finger pinch gestures
+- Allow commands to be triggered based on threshold. Inspired by https://github.com/osleg/gebaar-libinput-fork implementation of this.
 
 Gebaar
 =========
@@ -57,30 +58,8 @@ down = ""
 left = ""
 right = ""
 
-[[command-swipe-gesture]]
-fingers = 4
-left_up = ""
-right_up = ""
-up = ""
-left_down = ""
-right_down = ""
-down = ""
-left = ""
-right = ""
-
 [[command-swipe-touch]]
 fingers = 3
-left_up = ""
-right_up = ""
-up = ""
-left_down = ""
-right_down = ""
-down = ""
-left = ""
-right = ""
-
-[[command-swipe-touch]]
-fingers = 4
 left_up = ""
 right_up = ""
 up = ""
@@ -106,16 +85,22 @@ Additional config options can be added which are listed below:
 ```toml
 [settings]
 interact.type = ""
+pinch.threshold = 0.25
+gesture.threshold = 0.5
 ```
 
-This manually sets whether Gebaar attempts to recognize touchscreen gestures or touchpad gestures on startup. </br>Options are `"TOUCH"` (touchscreen), `"GESTURE"` (touchpad), or `"BOTH"` which allows recognition of both. If you see any issues using `"BOTH"` I suggest setting it back to your main option. This config option is overwritten by the real available mode when a switch event occurs on 2 in 1 laptops enabling touchpad gestures in laptop mode and touchscreen gestures in tablet mode (unless `"BOTH"` is set, which makes both gesture types recognized at all times). If unset, Gebaar attempts to auto-detect which is provided, which usually falls back to `"GESTURE"` if available.
+`interact.type` manually sets whether Gebaar attempts to recognize touchscreen gestures or touchpad gestures on startup. </br>Options are `"TOUCH"` (touchscreen), `"GESTURE"` (touchpad), or `"BOTH"` which allows recognition of both. If you see any issues using `"BOTH"` I suggest setting it back to your main option. This config option is overwritten by the real available mode when a switch event occurs on 2 in 1 laptops enabling touchpad gestures in laptop mode and touchscreen gestures in tablet mode (unless `"BOTH"` is set, which makes both gesture types recognized at all times). If unset, Gebaar attempts to auto-detect which is provided, which usually falls back to `"GESTURE"` if available.
+
+`pinch.threshold` determines the percentage travel between fingers to move before executing command. Currently a oneshot gesture at the moment.
+
+`gesture.threshold` determines the distance to travel on a gesture swipe before executing a command. Currently a oneshot gesture at the moment. Will issue command on gesture end regardless of if threshold was reached unless it already triggered. To be worked on.
 
 ```toml
 [[command-swipe-gesture]]
-fingers =
+fingers = 3
 
 [[command-swipe-touch]]
-fingers =
+fingers = 3
 ```
 `command-swipe-gesture` commands are run on detected touchpad gestures. `command-swipe-touch` commands are run on detected touchscreen gestures. Gebaar by default only runs in one mode at a time but automatically detects switches, changing modes accordingly.
 `fingers` option can be 2 or greater
@@ -170,7 +155,7 @@ WantedBy=default.target
 
 Once the file is in place simply run the following once to enable and run gebaar automatically.
 ```sh
-$ systemctl --user enable gebaard; systemctl --user start gebaard
+$ systemctl --user --now enable gebaard
 ```
 
 ### Repository versions

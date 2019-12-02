@@ -83,6 +83,9 @@ void gebaar::config::Config::load_config()
 
             interact_type = *config->get_qualified_as<std::string>("settings.interact.type");
 
+            pinch_threshold = config->get_qualified_as<double>("settings.pinch.threshold").value_or(0.25);
+            swipe_threshold = config->get_qualified_as<double>("settings.gesture.threshold").value_or(0.5);
+
             loaded = true;
             spdlog::get("main")->debug("[{}] at {} - Config loaded", FN, __LINE__);
         }

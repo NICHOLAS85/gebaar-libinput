@@ -48,6 +48,8 @@ namespace gebaar::config {
         std::string laptop_mode_command;
         std::string tablet_mode_command;
         std::string interact_type;
+        double pinch_threshold;
+        double swipe_threshold;
 
     private:
         std::map<int, std::map<std::string, std::string>> gesture_commands;
