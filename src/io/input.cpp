@@ -191,7 +191,10 @@ void gebaar::io::Input::handle_touch_event_motion(libinput_event_touch* tev)
         double prevx = prevcoord.first;
         double prevy = prevcoord.second;
         touch_swipe_event.delta_xy.find(libinput_event_touch_get_slot(tev))->second = { libinput_event_touch_get_x(tev) - prevx, libinput_event_touch_get_y(tev) - prevy };
+        touch_swipe_event.delta_xy.find(libinput_event_touch_get_slot(tev))->second.first += (libinput_event_touch_get_x(tev) - prevx);
+        touch_swipe_event.delta_xy.find(libinput_event_touch_get_slot(tev))->second.second += (libinput_event_touch_get_y(tev) - prevy);
         touch_swipe_event.prev_xy.find(libinput_event_touch_get_slot(tev))->second = { libinput_event_touch_get_x(tev), libinput_event_touch_get_y(tev) };
+        spdlog::get("main")->debug("[{}] at {} - {} dx: {} , dy: {}", FN, __LINE__, __func__, touch_swipe_event.delta_xy.find(libinput_event_touch_get_slot(tev))->second.first, touch_swipe_event.delta_xy.find(libinput_event_touch_get_slot(tev))->second.second);
     }
 }
 
@@ -231,6 +234,7 @@ void gebaar::io::Input::handle_swipe_event_with_coords(libinput_event_gesture* g
 
         gesture_swipe_event.x += libinput_event_gesture_get_dx_unaccelerated(gev);
         gesture_swipe_event.y += libinput_event_gesture_get_dy_unaccelerated(gev);
+        spdlog::get("main")->debug("[{}] at {} - {} dx: {} , dy: {}", FN, __LINE__, __func__, gesture_swipe_event.x, gesture_swipe_event.y);
         if (abs(gesture_swipe_event.x) > threshold_x || abs(gesture_swipe_event.y) > threshold_y) {
           handle_swipe_event_without_coords(libinput_event_get_gesture_event(libinput_event), false);
         }

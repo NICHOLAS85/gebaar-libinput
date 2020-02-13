@@ -78,21 +78,18 @@ private:
 
     bool check_chosen_event(std::string ev);
 
-    static int open_restricted(const char* path, int flags, void* user_data)
+    static int open_restricted(const char* path, int flags, __attribute__((unused)) void* user_data)
     {
         int fd = open(path, flags);
         return fd < 0 ? -errno : fd;
     }
 
-    static void close_restricted(int fd, void* user_data)
+    static void close_restricted(int fd, __attribute__((unused)) void* user_data)
     {
         close(fd);
     }
 
-    constexpr static struct libinput_interface libinput_interface = {
-        .open_restricted = open_restricted,
-        .close_restricted = close_restricted,
-    };
+   constexpr static struct libinput_interface libinput_interface = { open_restricted, close_restricted };
 
     void check_multitouch_down_up(std::vector<std::pair<int, double>> slots, std::string downup);
 
