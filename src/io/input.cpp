@@ -441,6 +441,8 @@ void gebaar::io::Input::handle_event()
             break;
         case LIBINPUT_EVENT_TABLET_PAD_STRIP:
             break;
+        case LIBINPUT_EVENT_TABLET_PAD_KEY:
+            break;
         case LIBINPUT_EVENT_GESTURE_PINCH_BEGIN:
             handle_pinch_event(libinput_event_get_gesture_event(libinput_event), true);
             break;
