@@ -78,6 +78,8 @@ void gebaar::config::Config::load_config()
                 }
             }
 
+            key_command = *config->get_qualified_as<std::string>("command-key.190");
+
             laptop_mode_command = *config->get_qualified_as<std::string>("command-switch.laptop");
             tablet_mode_command = *config->get_qualified_as<std::string>("command-switch.tablet");
 

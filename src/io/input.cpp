@@ -288,6 +288,15 @@ void gebaar::io::Input::handle_switch_event(libinput_event_switch* gev)
     spdlog::get("main")->info("[{}] at {} - switch: {} mode ... executing", FN, __LINE__, swipe_event_group);
 }
 
+void gebaar::io::Input::handle_key_event(libinput_event_keyboard* gev)
+{
+    int key = libinput_event_keyboard_get_key(gev);
+    if (key == 190) {
+      std::system(config->key_command.c_str());
+      spdlog::get("main")->info("[{}] at {} - keyboard event: {} ... executing", FN, __LINE__, key);
+    }
+}
+
 /**
  * Initialize the input system
  * @return bool
@@ -399,6 +408,7 @@ void gebaar::io::Input::handle_event()
         case LIBINPUT_EVENT_DEVICE_REMOVED:
             break;
         case LIBINPUT_EVENT_KEYBOARD_KEY:
+            handle_key_event(libinput_event_get_keyboard_event(libinput_event));
             break;
         case LIBINPUT_EVENT_POINTER_MOTION:
             break;
@@ -440,6 +450,8 @@ void gebaar::io::Input::handle_event()
         case LIBINPUT_EVENT_TABLET_PAD_RING:
             break;
         case LIBINPUT_EVENT_TABLET_PAD_STRIP:
+            break;
+        case LIBINPUT_EVENT_TABLET_PAD_KEY:
             break;
         case LIBINPUT_EVENT_GESTURE_PINCH_BEGIN:
             handle_pinch_event(libinput_event_get_gesture_event(libinput_event), true);

@@ -112,6 +112,8 @@ private:
     void handle_pinch_event(libinput_event_gesture* gev, bool begin);
 
     void handle_switch_event(libinput_event_switch* gev);
+
+    void handle_key_event(libinput_event_keyboard* gev);
 };
 }
 
