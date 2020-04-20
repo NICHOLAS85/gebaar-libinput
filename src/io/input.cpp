@@ -278,14 +278,17 @@ void gebaar::io::Input::handle_pinch_event(libinput_event_gesture* gev, bool beg
 void gebaar::io::Input::handle_switch_event(libinput_event_switch* gev)
 {
     int state = libinput_event_switch_get_switch_state(gev);
-    if (state == 0) {
-        std::system(config->laptop_mode_command.c_str());
-        swipe_event_group = "GESTURE";
-    } else {
-        std::system(config->tablet_mode_command.c_str());
-        swipe_event_group = "TOUCH";
+    int state_2 = libinput_event_switch_get_switch(gev);
+    if (state_2 == 2) {
+        if (state == 0) {
+            std::system(config->laptop_mode_command.c_str());
+            swipe_event_group = "GESTURE";
+        } else {
+            std::system(config->tablet_mode_command.c_str());
+            swipe_event_group = "TOUCH";
+        }
+        spdlog::get("main")->info("[{}] at {} - switch: {} mode ... executing", FN, __LINE__, swipe_event_group);
     }
-    spdlog::get("main")->info("[{}] at {} - switch: {} mode ... executing", FN, __LINE__, swipe_event_group);
 }
 
 /**
