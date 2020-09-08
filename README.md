@@ -301,3 +301,4 @@ $ systemctl --user enable gebaard-watcher.path
 - [x] Converting libinput events to motions
 - [x] Running commands based on motions
 - [x] Refactor code to be up to Release standards, instead of testing-hell
+
