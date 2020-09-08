@@ -42,34 +42,44 @@ void gebaar::config::Config::load_config() {
         std::cerr << e.what() << std::endl;
         exit(EXIT_FAILURE);
       }
-      spdlog::get("main")->debug("[{}] at {} - Generating SWIPE_COMMANDS", FN,
-                                 __LINE__);
       auto command_swipe_table =
           config->get_table_array_qualified("swipe.commands");
-      for (const auto& table : *command_swipe_table) {
-        auto fingers = table->get_as<size_t>("fingers");
-        fingers = fingers.value_or(3);
-        auto type = table->get_as<std::string>("type");
-        type = type.value_or("GESTURE");
-        for (std::pair<size_t, std::string> element : SWIPE_COMMANDS) {
-          commands[*fingers][*type][element.second] =
-              table->get_qualified_as<std::string>(element.second).value_or("");
-        }
-      }
-
-      spdlog::get("main")->debug("[{}] at {} - Generating PINCH_COMMANDS", FN,
-                                 __LINE__);
-      auto pinch_command_table =
-          config->get_table_array_qualified("pinch.commands");
-      for (const auto& table : *pinch_command_table) {
+      if (command_swipe_table) {
+        spdlog::get("main")->debug("[{}] at {} - Generating SWIPE_COMMANDS", FN,
+                                  __LINE__);
+        for (const auto& table : *command_swipe_table) {
           auto fingers = table->get_as<size_t>("fingers");
-          fingers = fingers.value_or(2);
+          fingers = fingers.value_or(3);
           auto type = table->get_as<std::string>("type");
-          type = type.value_or("ONESHOT");
-          for (std::pair<int, std::string> element : PINCH_COMMANDS) {
-            pinch_commands[*fingers][*type][element.second] =
+          type = type.value_or("GESTURE");
+          for (std::pair<size_t, std::string> element : SWIPE_COMMANDS) {
+            commands[*fingers][*type][element.second] =
                 table->get_qualified_as<std::string>(element.second).value_or("");
           }
+        }
+      } else {
+        spdlog::get("main")->debug("[{}] at {} - No SWIPE_COMMANDS found", FN,
+                                  __LINE__);
+      }
+
+      auto pinch_command_table =
+          config->get_table_array_qualified("pinch.commands");
+      if (pinch_command_table) {
+        spdlog::get("main")->debug("[{}] at {} - Generating PINCH_COMMANDS", FN,
+                                  __LINE__);
+        for (const auto& table : *pinch_command_table) {
+            auto fingers = table->get_as<size_t>("fingers");
+            fingers = fingers.value_or(2);
+            auto type = table->get_as<std::string>("type");
+            type = type.value_or("ONESHOT");
+            for (std::pair<int, std::string> element : PINCH_COMMANDS) {
+              pinch_commands[*fingers][*type][element.second] =
+                  table->get_qualified_as<std::string>(element.second).value_or("");
+            }
+        }
+      } else {
+        spdlog::get("main")->debug("[{}] at {} - No PINCH_COMMANDS found", FN,
+                                  __LINE__);
       }
 
       switch_commands_laptop =
