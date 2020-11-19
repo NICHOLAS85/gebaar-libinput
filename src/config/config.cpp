@@ -54,8 +54,10 @@ void gebaar::config::Config::load_config() {
           fingers = fingers.value_or(3);
           auto type = table->get_as<std::string>("type");
           type = type.value_or("GESTURE");
+          auto one_shot = table->get_as<bool>("one_shot");
+          one_shot = one_shot.value_or(true);
           for (std::pair<size_t, std::string> element : SWIPE_COMMANDS) {
-            swipe_commands[*fingers][*type][element.second] =
+            swipe_commands[*fingers][*type][*one_shot][element.second] =
                 table->get_qualified_as<std::string>(element.second).value_or("");
           }
         }
@@ -98,9 +100,6 @@ void gebaar::config::Config::load_config() {
       settings.gesture_swipe_threshold =
           config->get_qualified_as<double>("settings.gesture_swipe.threshold")
               .value_or(0.5);
-      settings.gesture_swipe_one_shot =
-          config->get_qualified_as<bool>("settings.gesture_swipe.one_shot")
-              .value_or(true);
       settings.gesture_swipe_trigger_on_release =
           config
               ->get_qualified_as<bool>(
@@ -175,11 +174,12 @@ std::string gebaar::config::Config::get_swipe_type_name(size_t key) {
 
 std::string gebaar::config::Config::get_swipe_command(size_t fingers,
                                                 std::string type,
-                                                size_t swipe_type) {
+                                                size_t swipe_type,
+                                                bool one_shot) {
     if (fingers > 0 && swipe_type >= MIN_DIRECTION &&
       swipe_type <= MAX_DIRECTION) {
     if (swipe_commands.count(fingers)) {
-      return swipe_commands[fingers][type][SWIPE_COMMANDS.at(swipe_type)];
+      return swipe_commands[fingers][type][one_shot][SWIPE_COMMANDS.at(swipe_type)];
     }
   }
   return "";

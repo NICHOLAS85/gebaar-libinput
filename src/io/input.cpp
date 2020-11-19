@@ -115,16 +115,20 @@ bool gebaar::io::Input::test_above_threshold(size_t swipe_type, double length,
 
 void gebaar::io::Input::apply_swipe(size_t swipe_type, size_t fingers, std::string type) {
   std::string command;
-  if (strcmp(type.c_str(), "TOUCH") == 0) {
-    command = config->get_swipe_command(fingers, "TOUCH", swipe_type);
-  } else {
-    command = config->get_swipe_command(fingers, "GESTURE", swipe_type);
-  }
+  command = config->get_swipe_command(fingers, type, swipe_type, true);
+
   spdlog::get("main")->debug(
       "[{}] at {} - {} - fingers: {}, type: {}, gesture: {} ... ",
       FN, __LINE__, __func__, fingers, type,
       config->get_swipe_type_name(swipe_type));
-  runproc(command.c_str());
+  if (runproc(command.c_str())) {
+    gesture_swipe_event.executed = true;
+  } else {
+    command = config->get_swipe_command(fingers, type, swipe_type, false);
+    if (! runproc(command.c_str())){
+      gesture_swipe_event.executed = true;
+    }
+  }
 }
 
 /**
@@ -326,7 +330,6 @@ void gebaar::io::Input::handle_touch_event_motion(libinput_event_touch* tev) {
  */
 void gebaar::io::Input::reset_swipe_event() {
   gesture_swipe_event = {};
-  gesture_swipe_event.executed = false;
 }
 
 /**
@@ -577,21 +580,20 @@ void gebaar::io::Input::handle_swipe_event_without_coords(
  */
 void gebaar::io::Input::handle_swipe_event_with_coords(
     libinput_event_gesture* gev) {
-  if (config->settings.gesture_swipe_one_shot && gesture_swipe_event.executed)
+  if (gesture_swipe_event.executed) {
     return;
+  }
 
   // Since swipe gesture counts in dpi we have to convert
   int threshold_x = config->settings.gesture_swipe_threshold *
-                    SWIPE_X_THRESHOLD * gesture_swipe_event.step;
+                    SWIPE_X_THRESHOLD;
   int threshold_y = config->settings.gesture_swipe_threshold *
-                    SWIPE_Y_THRESHOLD * gesture_swipe_event.step;
+                    SWIPE_Y_THRESHOLD;
   gesture_swipe_event.x += libinput_event_gesture_get_dx_unaccelerated(gev);
   gesture_swipe_event.y += libinput_event_gesture_get_dy_unaccelerated(gev);
   if (abs(gesture_swipe_event.x) > threshold_x ||
       abs(gesture_swipe_event.y) > threshold_y) {
     trigger_swipe_command();
-    gesture_swipe_event.executed = true;
-    inc_step(&gesture_swipe_event.step);
   }
 }
 
@@ -604,9 +606,8 @@ void gebaar::io::Input::trigger_swipe_command() {
   double y = gesture_swipe_event.y;
   int swipe_type = get_swipe_type(x, y);
   apply_swipe(swipe_type, gesture_swipe_event.fingers, swipe_event_group);
-  spdlog::get("main")->debug("[{}] at {} - {}: swipe type {}", FN, __LINE__,
-                             __func__, config->get_swipe_type_name(swipe_type));
-  gesture_swipe_event = {};
+  gesture_swipe_event.x = 0;
+  gesture_swipe_event.y = 0;
 }
 
 /**

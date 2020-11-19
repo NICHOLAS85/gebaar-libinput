@@ -62,7 +62,6 @@ class Config {
         double pinch_threshold;
         double rotate_threshold;
 
-        bool gesture_swipe_one_shot;
         double gesture_swipe_threshold;
         bool gesture_swipe_trigger_on_release;
 
@@ -70,7 +69,7 @@ class Config {
         std::string interact_type;
     } settings;
 
-    std::string get_swipe_command(size_t fingers, std::string type, size_t swipe_type);
+    std::string get_swipe_command(size_t fingers, std::string type, size_t swipe_type, bool one_shot);
     std::string get_pinch_command(size_t fingers, std::string type, size_t swipe_type);
     std::string get_switch_command(size_t key);
     std::string get_swipe_type_name(size_t key);
@@ -83,7 +82,7 @@ class Config {
 
     std::string config_file_path;
     std::shared_ptr<cpptoml::table> config;
-    std::map<size_t, std::map<std::string, std::map<std::string, std::string>>> swipe_commands;
+    std::map<size_t, std::map<std::string, std::map<bool, std::map<std::string, std::string>>>> swipe_commands;
     std::map<size_t, std::map<std::string, std::map<std::string, std::string>>> pinch_commands;
     std::map<std::string, std::string> switch_commands;
 };
