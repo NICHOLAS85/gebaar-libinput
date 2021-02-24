@@ -45,6 +45,7 @@ struct gesture_swipe_event {
   double y;
 
   bool executed;
+  bool continuous;
 };
 
 struct gesture_pinch_event {

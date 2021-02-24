@@ -125,7 +125,9 @@ void gebaar::io::Input::apply_swipe(size_t swipe_type, size_t fingers, std::stri
     gesture_swipe_event.executed = true;
   } else {
     command = config->get_swipe_command(fingers, type, swipe_type, false);
-    if (! runproc(command.c_str())){
+    if (runproc(command.c_str())){
+      gesture_swipe_event.continuous = true;
+    } else {
       gesture_swipe_event.executed = true;
     }
   }
@@ -330,6 +332,8 @@ void gebaar::io::Input::handle_touch_event_motion(libinput_event_touch* tev) {
  */
 void gebaar::io::Input::reset_swipe_event() {
   gesture_swipe_event = {};
+  gesture_swipe_event.executed = false;
+  gesture_swipe_event.continuous = false;
 }
 
 /**
@@ -567,7 +571,7 @@ void gebaar::io::Input::handle_swipe_event_without_coords(
   } else {
     // This executed when fingers left the touchpad
     if (!gesture_swipe_event.executed &&
-        config->settings.gesture_swipe_trigger_on_release) {
+        config->settings.gesture_swipe_trigger_on_release && !gesture_swipe_event.continuous) {
       trigger_swipe_command();
     }
     reset_swipe_event();
