@@ -18,6 +18,7 @@
 
 #include "input.h"
 #include <poll.h>
+#include <X11/extensions/XInput2.h>
 
 bool runproc(const char* cmdline) {
   if (strlen(cmdline) > 0) {
@@ -61,6 +62,93 @@ bool gebaar::io::Input::initialize_context() {
   return libinput_udev_assign_seat(libinput, "seat0") == 0;
 }
 
+// Xorg does not return same device name as libinput and libinput does not provide device IDs like Xorg
+// Fallback to mapping vendor/product ids which both provide
+void gebaar::io::Input::update_device_list(){
+  Display * display = XOpenDisplay(NULL);
+  Atom integerAtom;
+  integerAtom = XInternAtom(display, "INTEGER", false);
+  Atom type_return;
+  int format_return;
+  unsigned long num_items_return, bytes_after_return;
+  uint32_t* product_info;
+  uint16_t vendor = 0;
+  uint16_t product = 0;
+  int deviceCount = 0;
+
+  XIDeviceInfo *devices = XIQueryDevice(display, XIAllDevices, &deviceCount);
+  spdlog::get("main")->debug("[{}] at {} - {}: count {}",
+                               FN, __LINE__, __func__, deviceCount);
+  for (int i = 0; i < deviceCount; ++i) {
+    if (XIGetProperty(display, devices[i].deviceid,
+                      XInternAtom(display, "Device Product ID", 0), 0, 2, 0, integerAtom,
+                      &type_return, &format_return, &num_items_return,
+                      &bytes_after_return,
+                      reinterpret_cast<unsigned char**>(&product_info)) == 0 &&
+                      product_info) {
+      if (num_items_return == 2 && product_info[0] != 0 && product_info[1] != 0) {
+        vendor = product_info[0];
+        product = product_info[1];
+        deviceids[vendor][product] = devices[i].deviceid;
+        spdlog::get("main")->debug("[{}] at {} - {}: Device mapped: {}, map: {}.{}.{}",
+          FN, __LINE__, __func__, devices[i].name, vendor, product, deviceids[vendor][product]);
+      }
+      XFree(product_info);
+    }
+  }
+  XIFreeDeviceInfo(devices);
+  XCloseDisplay(display);
+}
+
+void gebaar::io::Input::determine_orientation(libinput_device* dev) {
+  Display * display = XOpenDisplay(NULL);
+  int vendor = libinput_device_get_id_vendor(dev);
+  int product = libinput_device_get_id_product(dev);
+  int id = deviceids[vendor][product];
+  spdlog::get("main")->debug("[{}] at {} - {}: idmap {}.{}.{}",
+                                 FN, __LINE__, __func__, vendor, product, id);
+  Atom floatAtom;
+  Atom type_return;
+  floatAtom = XInternAtom(display, "FLOAT", false);
+  int format_return;
+  unsigned long num_items_return, bytes_after_return;
+  const char* matrix[9];
+  float * retrieved_matrix;
+  Status result = XIGetProperty(display,
+                  id,
+                  XInternAtom(display, "Coordinate Transformation Matrix", 0),
+                  0, 9 /* Length in 32 bit words */,
+                  False,
+                  floatAtom,
+                  &type_return, &format_return,
+                  &num_items_return, &bytes_after_return,
+                  (unsigned char **)&retrieved_matrix);
+
+  if (result != Success) {
+     // error
+  } else if (format_return != 32 && num_items_return != 9 && bytes_after_return != 0) {
+     // error
+  } else {
+
+    for (int i = 0; i < 9; i++) {
+      if (retrieved_matrix[i]>= 0.5){
+        matrix[i] = "1";
+      } else if (retrieved_matrix[i] <= -0.5) {
+        matrix[i] = "-1";
+      } else {
+        matrix[i] = "0";
+      }
+    }
+    std::string code = std::string(matrix[0]) + matrix[1] + matrix[2] + matrix[3] + matrix[4] + matrix[5] + matrix[6] + matrix[7] + matrix[8];
+    orientation = orientmap.at(code);
+  }
+  spdlog::get("main")->debug("[{}] at {} - {}: dev: {} matrix: {} {} {} {} {} {} {} {} {}",
+                                 FN, __LINE__, __func__,  libinput_device_get_name(dev) , matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5], matrix[6], matrix[7], matrix[8]);
+
+  XFree(retrieved_matrix);
+  XCloseDisplay(display);
+}
+
 size_t gebaar::io::Input::get_swipe_type(double sdx, double sdy) {
   double x = sdx;
   double y = sdy;
@@ -88,7 +176,7 @@ size_t gebaar::io::Input::get_swipe_type(double sdx, double sdy) {
       swipe_type += x < 0 ? -1 : 1;
     }
   }
-  return swipe_type;
+  return swipemap.at(orientation).at(swipe_type);
 }
 
 bool gebaar::io::Input::test_above_threshold(size_t swipe_type, double length,
@@ -621,10 +709,10 @@ void gebaar::io::Input::trigger_swipe_command() {
  * 0 == laptop
  * 1 == tablet
  */
-void gebaar::io::Input::handle_switch_event(libinput_event_switch* gev)
+void gebaar::io::Input::handle_switch_event(libinput_event_switch* sev)
 {
-  int state = libinput_event_switch_get_switch_state(gev);
-  int state_2 = libinput_event_switch_get_switch(gev);
+  int state = libinput_event_switch_get_switch_state(sev);
+  int state_2 = libinput_event_switch_get_switch(sev);
   spdlog::get("main")->debug("[{}] at {} - state: {}, state_2: {}", FN, __LINE__, state, state_2);
   if (state_2 == 2) {
     if (state == 0) {
@@ -647,6 +735,7 @@ void gebaar::io::Input::handle_switch_event(libinput_event_switch* gev)
  */
 bool gebaar::io::Input::initialize() {
   initialize_context();
+  update_device_list();
   return gesture_device_exists();
 }
 
@@ -785,6 +874,7 @@ void gebaar::io::Input::handle_event() {
         break;
       case LIBINPUT_EVENT_TOUCH_UP:
         if (check_chosen_event("TOUCH")) {
+          determine_orientation(libinput_event_get_device(libinput_event));
           handle_touch_event_up(libinput_event_get_touch_event(libinput_event));
         }
         break;

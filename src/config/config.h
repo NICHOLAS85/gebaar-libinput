@@ -35,10 +35,9 @@
 #define LONGSWIPE_SCREEN_PERCENT_DEFAULT 70
 
 const std::map<size_t, std::string> SWIPE_COMMANDS = {
-    {1, "left_up"},        {2, "up"},
-    {3, "right_up"},       {4, "left"},
-    {6, "right"},          {7, "left_down"},
-    {8, "down"},           {9, "right_down"}
+    {1, "left_up"},   {2, "up"},   {3, "right_up"},
+    {4, "left"},                   {6, "right"},
+    {7, "left_down"}, {8, "down"}, {9, "right_down"}
 };
 const std::map<size_t, std::string> PINCH_COMMANDS = {
     {1, "in"},             {2, "out"},

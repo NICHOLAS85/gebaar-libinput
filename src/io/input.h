@@ -68,6 +68,7 @@ struct touch_swipe_event {
   std::vector<std::pair<size_t, double>> down_slots;
   std::vector<std::pair<size_t, double>> up_slots;
 };
+
 class Input {
  public:
   explicit Input(std::shared_ptr<gebaar::config::Config> const& config_ptr);
@@ -81,6 +82,38 @@ class Input {
  private:
   std::shared_ptr<gebaar::config::Config> config;
   std::string swipe_event_group;
+  std::map<int, std::map<int, int>> deviceids;
+  const std::map<size_t, size_t> normal = {
+    {1, 1}, {2, 2}, {3, 3},
+    {4, 4},         {6, 6},
+    {7, 7}, {8, 8}, {9, 9}
+  };
+  const std::map<size_t, size_t> clockwise = {
+    {1, 3}, {2, 6}, {3, 9},
+    {4, 2},         {6, 8},
+    {7, 1}, {8, 4}, {9, 7}
+  };
+  const std::map<size_t, size_t> upsidedown = {
+    {1, 9}, {2, 8}, {3, 7},
+    {4, 6},         {6, 4},
+    {7, 3}, {8, 2}, {9, 1}
+  };
+  const std::map<size_t, size_t> counterclockwise = {
+    {1, 7}, {2, 4}, {3, 1},
+    {4, 8},         {6, 2},
+    {7, 9}, {8, 6}, {9, 3}
+  };
+  const std::map<std::string, std::map<size_t, size_t>> swipemap = {
+    {"normal", normal}, {"clockwise", clockwise},
+    {"upsidedown", upsidedown}, {"counterclockwise", counterclockwise}
+  };
+  const std::map<std::string, std::string> orientmap = {
+    {"100010001", "normal"},     {"0-11100001", "clockwise"},
+    {"-1010-11001", "upsidedown"}, {"010-101001", "counterclockwise"}
+  };
+  std::string orientation;
+
+
   struct libinput* libinput;
   struct libinput_event* libinput_event;
   struct udev* udev;
@@ -128,6 +161,10 @@ class Input {
 
   void handle_event();
 
+  void update_device_list();
+
+  void determine_orientation(libinput_device* dev);
+
   /* Swipe event */
   void reset_swipe_event();
 
@@ -162,7 +199,7 @@ class Input {
 
   void handle_pinch_event(libinput_event_gesture* gev, bool begin);
 
-  void handle_switch_event(libinput_event_switch* gev);
+  void handle_switch_event(libinput_event_switch* sev);
 };
 }  // namespace gebaar::io
 

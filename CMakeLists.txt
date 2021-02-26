@@ -7,6 +7,8 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 
 find_package(Libinput REQUIRED)
 find_package(udev REQUIRED)
+find_package(XINPUT REQUIRED)
+find_package(X11 REQUIRED)
 
 include_directories(${PROJECT_SOURCE_DIR}/src)
 file(GLOB_RECURSE SOURCE_FILES RELATIVE ${PROJECT_SOURCE_DIR} src/*.h src/*.cpp)
@@ -16,11 +18,15 @@ add_executable(gebaard ${SOURCE_FILES})
 target_link_libraries(gebaard
   ${LIBINPUT_LIBRARIES}
   ${UDEV_LIBRARIES}
+  ${XINPUT_LIBRARIES}
+  ${X11_LIBRARIES}
   stdc++fs
 )
 target_include_directories(gebaard PUBLIC
   ${LIBINPUT_INCLUDE_DIRS}
   ${UDEV_INCLUDE_DIRS}
+  ${XINPUT_INCLUDE_DIRS}
+  ${X11_INCLUDE_DIRS}
   libs/cxxopts/include
   libs/cpptoml/include
   libs/spdlog/include
