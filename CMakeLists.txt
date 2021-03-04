@@ -5,8 +5,8 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -Wall -Wextra -Werror -pedantic -pthread")
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 
-find_package(Libinput REQUIRED)
-find_package(udev REQUIRED)
+find_package(LIBINPUT REQUIRED)
+find_package(UDEV REQUIRED)
 find_package(XINPUT REQUIRED)
 find_package(X11 REQUIRED)
 
