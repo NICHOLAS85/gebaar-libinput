@@ -176,7 +176,7 @@ size_t gebaar::io::Input::get_swipe_type(double sdx, double sdy) {
       swipe_type += x < 0 ? -1 : 1;
     }
   }
-  return swipemap.at(orientation).at(swipe_type);
+  return orientation.at(swipe_type);
 }
 
 bool gebaar::io::Input::test_above_threshold(size_t swipe_type, double length,

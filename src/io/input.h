@@ -103,15 +103,11 @@ class Input {
     {4, 8},         {6, 2},
     {7, 9}, {8, 6}, {9, 3}
   };
-  const std::map<std::string, std::map<size_t, size_t>> swipemap = {
-    {"normal", normal}, {"clockwise", clockwise},
-    {"upsidedown", upsidedown}, {"counterclockwise", counterclockwise}
+  const std::map<std::string, std::map<size_t, size_t>> orientmap = {
+    {"100010001", normal}, {"0-11100001", clockwise},
+    {"-1010-11001", upsidedown}, {"010-101001", counterclockwise}
   };
-  const std::map<std::string, std::string> orientmap = {
-    {"100010001", "normal"},     {"0-11100001", "clockwise"},
-    {"-1010-11001", "upsidedown"}, {"010-101001", "counterclockwise"}
-  };
-  std::string orientation;
+  std::map<size_t, size_t> orientation;
 
 
   struct libinput* libinput;
