@@ -102,11 +102,10 @@ void gebaar::io::Input::update_device_list(){
 
 void gebaar::io::Input::determine_orientation(libinput_device* dev) {
   Display * display = XOpenDisplay(NULL);
-  int vendor = libinput_device_get_id_vendor(dev);
-  int product = libinput_device_get_id_product(dev);
-  int id = deviceids[vendor][product];
-  spdlog::get("main")->debug("[{}] at {} - {}: idmap {}.{}.{}",
-                                 FN, __LINE__, __func__, vendor, product, id);
+  const char* sysname = libinput_device_get_sysname(dev);
+  int id = atoi(sysname+5);
+  spdlog::get("main")->debug("[{}] at {} - {}: idmap {}",
+                                 FN, __LINE__, __func__, id);
   Atom floatAtom;
   Atom type_return;
   floatAtom = XInternAtom(display, "FLOAT", false);
