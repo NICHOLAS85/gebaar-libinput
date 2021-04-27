@@ -66,35 +66,32 @@ bool gebaar::io::Input::initialize_context() {
 // Fallback to mapping vendor/product ids which both provide
 void gebaar::io::Input::update_device_list(){
   Display * display = XOpenDisplay(NULL);
-  Atom integerAtom;
-  integerAtom = XInternAtom(display, "INTEGER", false);
   Atom type_return;
   int format_return;
   unsigned long num_items_return, bytes_after_return;
-  uint32_t* product_info;
-  uint16_t vendor = 0;
-  uint16_t product = 0;
+  unsigned char *data;
   int deviceCount = 0;
 
   XIDeviceInfo *devices = XIQueryDevice(display, XIAllDevices, &deviceCount);
   spdlog::get("main")->debug("[{}] at {} - {}: count {}",
                                FN, __LINE__, __func__, deviceCount);
   for (int i = 0; i < deviceCount; ++i) {
-    if (XIGetProperty(display, devices[i].deviceid,
-                      XInternAtom(display, "Device Product ID", 0), 0, 2, 0, integerAtom,
-                      &type_return, &format_return, &num_items_return,
-                      &bytes_after_return,
-                      reinterpret_cast<unsigned char**>(&product_info)) == 0 &&
-                      product_info) {
-      if (num_items_return == 2 && product_info[0] != 0 && product_info[1] != 0) {
-        vendor = product_info[0];
-        product = product_info[1];
-        deviceids[vendor][product] = devices[i].deviceid;
-        spdlog::get("main")->debug("[{}] at {} - {}: Device mapped: {}, map: {}.{}.{}",
-          FN, __LINE__, __func__, devices[i].name, vendor, product, deviceids[vendor][product]);
-      }
-      XFree(product_info);
+    Status result = XIGetProperty(display, devices[i].deviceid,
+                    XInternAtom(display, "Device Node", False),
+                    0, 1024,
+                    False,
+                    XInternAtom(display, "STRING", false),
+                    &type_return, &format_return, &num_items_return,
+                    &bytes_after_return,
+                    (unsigned char **)&data);
+    if (result == Success && data != NULL) {
+        std::string longnode = reinterpret_cast<char*>(data);
+        std::string node = longnode.substr(11);
+        deviceids[node] = devices[i].deviceid;
+        spdlog::get("main")->debug("[{}] at {} - {}: Device mapped: {}, map: {} {}",
+          FN, __LINE__, __func__, devices[i].name, node, deviceids[node]);
     }
+    XFree(data);
   }
   XIFreeDeviceInfo(devices);
   XCloseDisplay(display);
@@ -102,14 +99,18 @@ void gebaar::io::Input::update_device_list(){
 
 void gebaar::io::Input::determine_orientation(libinput_device* dev) {
   Display * display = XOpenDisplay(NULL);
-  int vendor = libinput_device_get_id_vendor(dev);
-  int product = libinput_device_get_id_product(dev);
-  int id = deviceids[vendor][product];
-  spdlog::get("main")->debug("[{}] at {} - {}: idmap {}.{}.{}",
-                                 FN, __LINE__, __func__, vendor, product, id);
-  Atom floatAtom;
+  const char* sysname = libinput_device_get_sysname(dev);
+  if (deviceids.count(sysname)<=0){
+    spdlog::get("main")->info("[{}] at {} - {}: Unable to find device id for {}, falling back to upright orientation",
+                                   FN, __LINE__, __func__, sysname);
+    orientation = orientmap.at("100010001");
+    return;
+  }
+  int id = deviceids[sysname];
+
+  spdlog::get("main")->debug("[{}] at {} - {}: idmap {}, {}",
+                                 FN, __LINE__, __func__, id, sysname);
   Atom type_return;
-  floatAtom = XInternAtom(display, "FLOAT", false);
   int format_return;
   unsigned long num_items_return, bytes_after_return;
   const char* matrix[9];
@@ -119,17 +120,16 @@ void gebaar::io::Input::determine_orientation(libinput_device* dev) {
                   XInternAtom(display, "Coordinate Transformation Matrix", 0),
                   0, 9 /* Length in 32 bit words */,
                   False,
-                  floatAtom,
+                  XInternAtom(display, "FLOAT", false),
                   &type_return, &format_return,
                   &num_items_return, &bytes_after_return,
                   (unsigned char **)&retrieved_matrix);
 
   if (result != Success) {
-     // error
+     orientation = orientmap.at("100010001"); // error
   } else if (format_return != 32 && num_items_return != 9 && bytes_after_return != 0) {
-     // error
+     orientation = orientmap.at("100010001"); // error
   } else {
-
     for (int i = 0; i < 9; i++) {
       if (retrieved_matrix[i]>= 0.5){
         matrix[i] = "1";

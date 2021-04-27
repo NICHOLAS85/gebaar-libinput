@@ -82,7 +82,7 @@ class Input {
  private:
   std::shared_ptr<gebaar::config::Config> config;
   std::string swipe_event_group;
-  std::map<int, std::map<int, int>> deviceids;
+  std::map<std::string, int> deviceids;
   const std::map<size_t, size_t> normal = {
     {1, 1}, {2, 2}, {3, 3},
     {4, 4},         {6, 6},
