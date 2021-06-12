@@ -107,7 +107,7 @@ class Input {
     {"100010001", normal}, {"0-11100001", clockwise},
     {"-1010-11001", upsidedown}, {"010-101001", counterclockwise}
   };
-  std::map<size_t, size_t> orientation;
+  std::map<size_t, size_t> orientation = normal;
 
 
   struct libinput* libinput;
